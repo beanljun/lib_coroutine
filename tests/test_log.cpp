@@ -17,6 +17,7 @@ int main() {
     SYLAR_LOG_INFO(g_logger) << "info msg";
     SYLAR_LOG_DEBUG(g_logger) << "debug msg";
 
+
     SYLAR_LOG_FMT_FATAL(g_logger, "fatal %s:%d", __FILE__, __LINE__);
     SYLAR_LOG_FMT_ERROR(g_logger, "err %s:%d", __FILE__, __LINE__);
     SYLAR_LOG_FMT_INFO(g_logger, "info %s:%d", __FILE__, __LINE__);

@@ -65,7 +65,7 @@ public:
         }
     }
 
-    void unlocked() {
+    void unlock() {
         if(m_locked) {
             m_mutex.unlock();
             m_locked = false;

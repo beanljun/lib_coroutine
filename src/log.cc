@@ -253,12 +253,12 @@ LogEvent::LogEvent(const std::string& logger_name, LogLevel::Level level, const 
                     parsing_string = true;
 
                     // 如果%d后面直接跟了一对大括号，那么把大括号里面的内容提取出来作为dateformat
-                    if(c == "d") {  
+                    if(c != "d") {  
                         i++;
                         continue;
                     }
                     i++;
-                    if(i < m_pattern.size() && m_pattern[i] == '{')  continue;
+                    if(i < m_pattern.size() && m_pattern[i] != '{')  continue;
                     i++;
                     while(i < m_pattern.size() && m_pattern[i] != '}') {
                         dateformat.push_back(m_pattern[i]);
@@ -322,7 +322,6 @@ LogEvent::LogEvent(const std::string& logger_name, LogLevel::Level level, const 
             m_error = true;
             return;
         }
-
 }
 
 ///  格式化日志事件，返回格式化后的字符串
