@@ -103,7 +103,7 @@ template <class T>
 class LexicalCast<std::vector<T>, std::string> {
 public:
     std::string operator()(const std::vector<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence) // 序列节点
+        YAML::Node node(YAML::NodeType::Sequence); // 序列节点
         for(auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
@@ -135,7 +135,7 @@ template <class T>
 class LexicalCast<std::list<T>, std::string> {
 public:
     std::string operator()(const std::list<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence) // 序列节点
+        YAML::Node node(YAML::NodeType::Sequence); // 序列节点
         for(auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
@@ -167,7 +167,7 @@ template <class T>
 class LexicalCast<std::set<T>, std::string> {
 public:
     std::string operator()(const std::set<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence) 
+        YAML::Node node(YAML::NodeType::Sequence); 
         for(auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
@@ -199,7 +199,7 @@ template <class T>
 class LexicalCast<std::unordered_set<T>, std::string> {
 public:
     std::string operator()(const std::unordered_set<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence) 
+        YAML::Node node(YAML::NodeType::Sequence); 
         for(auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
@@ -231,7 +231,7 @@ template <class T>
 class LexicalCast<std::map<std::string, T>, std::string> {
 public:
     std::string operator()(const std::map<std::string, T>& v) {
-        YAML::Node node(YAML::NodeType::Map) 
+        YAML::Node node(YAML::NodeType::Map); 
         for(auto& i : v) {
             node[i.first] = YAML::Load(LexicalCast<T, std::string>()(i.second));
         }
@@ -263,7 +263,7 @@ template <class T>
 class LexicalCast<std::unordered_map<std::string, T>, std::string> {
 public:
     std::string operator()(const std::unordered_map<std::string, T>& v) {
-        YAML::Node node(YAML::NodeType::Map) 
+        YAML::Node node(YAML::NodeType::Map); 
         for(auto& i : v) {
             node[i.first] = YAML::Load(LexicalCast<T, std::string>()(i.second));
         }
@@ -317,7 +317,7 @@ public:
     }
 
     /// @brief 从YAML String初始化配置参数值，转换失败时抛出异常打印日志
-    boo fromString(const std::string& val) override {
+    bool fromString(const std::string& val) override {
         try {
             setValue(FromStr()(val));
         } catch (std::exception& e) {
@@ -469,3 +469,5 @@ private:
 };
 
 }
+
+#endif
