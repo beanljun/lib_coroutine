@@ -14,5 +14,6 @@
 #include "include/util.h"
 #include "include/log.h"
 #include "include/macro.h"
+#include "include/env.h"
 
 #endif

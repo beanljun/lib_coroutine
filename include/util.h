@@ -12,8 +12,8 @@
 #include <sys/types.h>
 #include <string>
 #include <vector>
-#include <string>
 #include <sys/time.h>
+#include <iostream>
 
 namespace sylar {
 

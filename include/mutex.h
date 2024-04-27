@@ -14,6 +14,7 @@
 #include <functional>
 #include <memory>
 #include <pthread.h>
+#include <stdexcept>
 #include <semaphore.h>
 #include <stdint.h>
 #include <atomic>
