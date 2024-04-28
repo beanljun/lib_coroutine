@@ -333,6 +333,8 @@ private:
     std::ofstream m_filestream;
     /// 上次重新打开时间
     time_t m_lastTime = 0;
+    /// 文件打开错误标志
+    bool m_reopenError = false;
 };
 
 /// 日志器类

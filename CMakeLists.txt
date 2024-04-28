@@ -28,6 +28,7 @@ set(LIB_SRC
     src/mutex.cc
     src/env.cc
     src/config.cc
+    src/thread.cc
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -45,6 +46,7 @@ sylar_add_executable(test_log "tests/test_log.cpp" sylar "${LIBS}")
 sylar_add_executable(test_util "tests/test_util.cpp" sylar "${LIBS}")
 sylar_add_executable(test_env "tests/test_env.cpp" sylar "${LIBS}")
 sylar_add_executable(test_config "tests/test_config.cpp" sylar "${LIBS}")
+sylar_add_executable(test_thread "tests/test_thread.cpp" sylar "${LIBS}")
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

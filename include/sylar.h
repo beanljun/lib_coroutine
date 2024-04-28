@@ -16,5 +16,6 @@
 #include "include/macro.h"
 #include "include/env.h"
 #include "include/config.h"
+#include "include/thread.h"
 
 #endif

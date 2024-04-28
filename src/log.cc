@@ -363,6 +363,7 @@ void StdoutLogAppender::log(LogEvent::ptr event) {
 FileLogAppender::FileLogAppender(const std::string& file) : LogAppender(LogFormatter::ptr(new LogFormatter)) {
     m_filename = file;
     reopen();
+    if(m_reopenError) std::cout << "reopen file " << m_filename << " error" << std::endl;
 }
 
 /// 距离上次写日志超过3秒，重新打开一次日志文件
@@ -372,7 +373,10 @@ void FileLogAppender::log(LogEvent::ptr event) {
     if(now >= m_lastTime + 3) {
         reopen();
         m_lastTime = now;
+        if(m_reopenError) std::cout << "reopen file " << m_filename << " error" << std::endl;
     }
+
+    if(m_reopenError) return;
 
     MutexType::Lock lock(m_mutex);
     if(m_formatter) {
@@ -391,7 +395,8 @@ bool FileLogAppender::reopen() {
         m_filestream.close();
     }
     m_filestream.open(m_filename, std::ios::app);
-    return !!m_filestream;
+    m_reopenError = !m_filestream;
+    return !m_reopenError;
 }
 
 /// 日志器构造函数
