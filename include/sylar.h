@@ -17,5 +17,6 @@
 #include "include/env.h"
 #include "include/config.h"
 #include "include/thread.h"
+#include "include/fiber.h"
 
 #endif
