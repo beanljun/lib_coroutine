@@ -96,7 +96,7 @@ Fiber::~Fiber() {
     // 根据栈内存是否为空，进行不同的释放操作
     if (m_stack) {
         // 有栈，为子协程， 需确保子协程为结束状态
-        SYLAR_ASSERT(m_state == Term);
+        SYLAR_ASSERT(m_state == TERM);
         StackAllocator::Dealloc(m_stack, m_stacksize);
         SYLAR_LOG_DEBUG(g_logger) << "Dealloc Stack, id = " << m_id;
     } else {
@@ -134,15 +134,15 @@ void Fiber::resume() {
     m_state = RUNNING;
 
     // 如果协程参与调度器调度，应该和调度器的主协程进行swap，而不是和线程的主协程进行swap，yeld同理
-    if (m_runinscheduler) {
-        if(swapcontext(&(Schuduler::GetMainFiber() -> m_ctx), &m_ctx)) {
-            SYLAR_ASSERT2(false, "swapcontext");
-        }
-    } else {
-        if (swapcontext(&t_thread_fiber -> m_ctx, &m_ctx)) {
-            SYLAR_ASSERT2(false, "swapcontext");
-        }
-    }
+    // if (m_runinscheduler) {
+    //     if(swapcontext(&(Schuduler::GetMainFiber() -> m_ctx), &m_ctx)) {
+    //         SYLAR_ASSERT2(false, "swapcontext");
+    //     }
+    // } else {
+    //     if (swapcontext(&t_thread_fiber -> m_ctx, &m_ctx)) {
+    //         SYLAR_ASSERT2(false, "swapcontext");
+    //     }
+    // }
 
 
 }
@@ -155,15 +155,15 @@ void Fiber::yield() {
         m_state = READY;
     }
 
-    if (m_runinscheduler) {
-        if (swapcontext(&m_ctx, &(Schuduler::GetMainFiber() -> m_ctx))) {
-            SYLAR_ASSERT2(false, "swapcontext");
-        }
-    } else {
-        if (swapcontext(&m_ctx, &t_thread_fiber -> m_ctx)) {
-            SYLAR_ASSERT2(false, "swapcontext");
-        }
-    }
+    // if (m_runinscheduler) {
+    //     if (swapcontext(&m_ctx, &(Schuduler::GetMainFiber() -> m_ctx))) {
+    //         SYLAR_ASSERT2(false, "swapcontext");
+    //     }
+    // } else {
+    //     if (swapcontext(&m_ctx, &t_thread_fiber -> m_ctx)) {
+    //         SYLAR_ASSERT2(false, "swapcontext");
+    //     }
+    // }
 }
 
 void Fiber::MainFunc() {
