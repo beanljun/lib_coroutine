@@ -11,6 +11,8 @@
 #include <functional>
 #include <ucontext.h>
 
+#include "include/thread.h"
+
 namespace sylar {
 
 class Fiber : public std::enable_shared_from_this<Fiber> {
