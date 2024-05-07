@@ -9,8 +9,8 @@
 #define __SYLAR_SCHEDULER_H__
 
 #include <memory>
-#include <string>
 #include <list>
+#include <string>
 #include <functional>
 
 #include "include/fiber.h"
@@ -154,15 +154,10 @@ private:
     std::atomic<size_t> m_activeThreadCount = {0};      /// 活跃的线程数量
     std::atomic<size_t> m_idleThreadCount = {0};        /// idle线程数量
 
-    /// 是否use caller
-    bool m_useCaller;
-    /// use_caller为true时，调度器所在线程的调度协程
-    Fiber::ptr m_rootFiber;
-    /// use_caller为true时，调度器所在线程的id
-    int m_rootThread = 0;
-
-    /// 是否停止
-    bool m_stopping = true;                             
+    bool m_useCaller;                                   /// 是否use caller
+    int m_rootThread = 0;                               /// use_caller为true时，调度器所在线程的id
+    Fiber::ptr m_rootFiber;                             /// use_caller为true时，调度器所在线程的调度协程
+    bool m_stopping = true;                             /// 是否正在停止                           
 
 };
 
