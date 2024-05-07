@@ -18,5 +18,6 @@
 #include "include/config.h"
 #include "include/thread.h"
 #include "include/fiber.h"
+#include "include/scheduler.h"
 
 #endif
