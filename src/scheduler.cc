@@ -62,24 +62,25 @@
         m_threadCount = threads;
     }
 
-    Scheduler::~Scheduler() {
-        SYLAR_LOG_DEBUG(g_logger) << "Scheduler::~Scheduler name=" << m_name;
-        SYLAR_ASSERT(m_stopping);
-        if(GetThis() == this) t_scheduler = nullptr;
-    }
-
     Scheduler *Scheduler::GetThis() { return t_scheduler; }
 
     Fiber *Scheduler::GetMainFiber() { return t_scheduler_fiber; }
 
     void Scheduler::setThis() { t_scheduler = this; }
 
+    Scheduler::~Scheduler() {
+        SYLAR_LOG_DEBUG(g_logger) << "Scheduler::~Scheduler()";
+        SYLAR_ASSERT(m_stopping);
+        if(GetThis() == this) t_scheduler = nullptr;
+    }
+
+    
+
 
 
     // step 1 检查`m_stopping`成员变量，如果它为`true`，则说明调度器正在停止，此时直接返回。
     // step 2 确保`m_threads`向量是空的，也就是说，确保调度器还没有启动，调整`m_threads`向量的大小为`m_threadCount`，也就是要创建的线程数量。
     // step 3 创建线程，线程对象被存储在`m_threads`向量中，线程的ID被添加到`m_threadIds`向量中。
-
     void Scheduler::start() {
         SYLAR_LOG_DEBUG(g_logger) << "start";
         MutexType::Lock lock(m_mutex);
@@ -87,13 +88,13 @@
             SYLAR_LOG_ERROR(g_logger) << "start stopping return";
             return;
         }
-
         SYLAR_ASSERT(m_threads.empty());
         m_threads.resize(m_threadCount);
-        for(size_t i = 0; i < m_idleThreadCount; ++i) { 
-            m_threads[i].reset(new Thread(std::bind(&Scheduler::run, this), m_name + "_" + std::to_string(i)));
-            m_threadIds.push_back(m_threads[i] -> getId());
-        }
+        for (size_t i = 0; i < m_threadCount; i++) {
+            m_threads[i].reset(new Thread(std::bind(&Scheduler::run, this),
+                                        m_name + "_" + std::to_string(i)));
+            m_threadIds.push_back(m_threads[i]->getId());
+            }
     }
 
     bool Scheduler::stopping() {
@@ -123,7 +124,7 @@
             SYLAR_ASSERT(GetThis() == this);
         } else SYLAR_ASSERT(GetThis() != this);
 
-        for(size_t i = 0; i < m_threadCount; ++i)  tickle();
+        for(size_t i = 0; i < m_threadCount; i++)  tickle();
 
         if(m_rootFiber) tickle();
 
@@ -138,20 +139,21 @@
             thrs.swap(m_threads);
         }
 
-        for(auto &i : thrs) i -> join();
-
+        for(auto& i : thrs) {
+            i -> join();
+        }
     }
 
     void Scheduler::run() {
         SYLAR_LOG_DEBUG(g_logger) << "run";
         setThis();
-        if(sylar::GetThreadId() != m_rootThread) t_scheduler_fiber = Fiber::GetThis().get();
+        if(sylar::GetThreadId() != m_rootThread) t_scheduler_fiber = sylar::Fiber::GetThis().get();
 
         Fiber::ptr idle_fiber(new Fiber(std::bind(&Scheduler::idle, this)));  // 创建一个idle协程，使用bind()将Scheduler::idle()函数绑定到idle协程上
         Fiber::ptr cb_fiber;                                                  // 回调协程
         ScheduleTask task;                                                    // 调度任务
 
-        while(1) {
+        while(true) {
             task.reset();
             bool tickle_me = false;         // 是否唤醒其他线程进行任务调度
             {
@@ -191,8 +193,9 @@
                 if(cb_fiber) cb_fiber -> reset(task.cb);  // 重置 cb_fiber 并设置其回调函数为 task.cb
                 else cb_fiber.reset(new Fiber(task.cb));  // 创建一个新的 Fiber 对象，其回调函数为 task.cb
                 task.reset(); 
-                cb_fiber -> resume();  // 恢复 cb_fiber 的执行
+                cb_fiber -> resume();   // 恢复 cb_fiber 的执行
                 --m_activeThreadCount;  // 活动线程数减一
+                cb_fiber.reset();       // 重置 cb_fiber
             } else {  
                 // 进到这个分支情况一定是任务队列空了，调度idle协程即可
                 if(idle_fiber -> getState() == Fiber::TERM) {  

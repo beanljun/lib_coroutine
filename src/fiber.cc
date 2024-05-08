@@ -9,7 +9,6 @@
 #include <include/macro.h>
 #include "include/fiber.h"
 #include "include/log.h"
-#include "include/macro.h"
 #include "include/config.h"
 #include "include/scheduler.h"
 
@@ -69,10 +68,27 @@ Fiber::Fiber() {
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber() main id = " << m_id;
 }
 
+void Fiber::SetThis(Fiber* f) {
+     t_fiber = f;
+}
+
+Fiber::ptr Fiber::GetThis() {
+    
+    if (t_fiber) {
+        return t_fiber -> shared_from_this();
+    }
+
+    ///如果当前线程还未创建协程，则创建线程的第一个协程
+    Fiber::ptr main_fiber(new Fiber);
+    SYLAR_ASSERT(t_fiber == main_fiber.get());
+    t_thread_fiber = main_fiber;
+    return t_fiber -> shared_from_this();
+}
+
 Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool run_in_scheduler)
     : m_id(s_fiber_id++)
     , m_cb(cb)
-    , m_runinscheduler(run_in_scheduler){
+    , m_runInScheduler(run_in_scheduler){
 
     ++s_fiber_count;
     m_stacksize = stacksize ? stacksize : g_fiber_stack_size -> getValue();
@@ -113,21 +129,18 @@ Fiber::~Fiber() {
     }
 }
 
-void Fiber::SetThis(Fiber* f) {
-     t_fiber = f;
-}
+void Fiber::reset(std::function<void()> cb) {
+    SYLAR_ASSERT(m_stack);
+    SYLAR_ASSERT(m_state == TERM);
+    m_cb = cb;
+    if (getcontext(&m_ctx)) SYLAR_ASSERT2(false, "getcontext");
 
-Fiber::ptr Fiber::GetThis() {
-    
-    if (t_fiber) {
-        return t_fiber -> shared_from_this();
-    }
+    m_ctx.uc_link          = nullptr;
+    m_ctx.uc_stack.ss_sp   = m_stack;
+    m_ctx.uc_stack.ss_size = m_stacksize;
 
-    ///如果当前线程还未创建协程，则创建线程的第一个协程
-    Fiber::ptr main_fiber(new Fiber);
-    SYLAR_ASSERT(t_fiber == main_fiber.get());
-    t_thread_fiber = main_fiber;
-    return t_fiber -> shared_from_this();
+    makecontext(&m_ctx, &Fiber::MainFunc, 0);
+    m_state = READY;
 }
 
 void Fiber::resume() {
@@ -136,7 +149,7 @@ void Fiber::resume() {
     m_state = RUNNING;
 
     // 如果协程参与调度器调度，应该和调度器的主协程进行swap，而不是和线程的主协程进行swap，yeld同理
-    if (m_runinscheduler) {
+    if (m_runInScheduler) {
         if(swapcontext(&(Scheduler::GetMainFiber() -> m_ctx), &m_ctx)) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
@@ -158,7 +171,7 @@ void Fiber::yield() {
     }
 
     // 如果协程参与调度器调度，那么应该和调度器的主协程进行swap，而不是线程主协程
-    if (m_runinscheduler) {
+    if (m_runInScheduler) {
         if (swapcontext(&m_ctx, &(Scheduler::GetMainFiber() -> m_ctx))) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
@@ -182,22 +195,6 @@ void Fiber::MainFunc() {
     raw_ptr -> yield();// 协程结束时⾃动yield, 切换到主协程
 }
 
-void Fiber::reset(std::function<void()> cb) {
-    SYLAR_ASSERT(m_stack);
-    SYLAR_ASSERT(m_state == TERM);
-    m_cb = cb;
-    if (getcontext(&m_ctx)) {
-        SYLAR_ASSERT2(false, "getcontext");
-    }
 
-    m_ctx.uc_link = nullptr;
-    m_ctx.uc_stack.ss_sp = m_stack;
-    m_ctx.uc_stack.ss_size = m_stacksize;
-
-    makecontext(&m_ctx, &Fiber::MainFunc, 0);
-    m_state = READY;
-
-
-}
 
 }

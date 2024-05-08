@@ -142,7 +142,7 @@ private:
     /// 入口函数
     std::function<void()> m_cb;
     /// 是否参与调度
-    bool m_runinscheduler;
+    bool m_runInScheduler;
 
 
 };
