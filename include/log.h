@@ -149,7 +149,7 @@ public:
     uint32_t getFiberId() const { return m_fiberId; }
 
     /// 获取时间
-    uint64_t getTime() const { return m_time; }
+    time_t getTime() const { return m_time; }
 
     /// 获取线程名称
     const std::string& getThreadName() const { return m_threadName; }
@@ -343,7 +343,7 @@ private:
     /// 文件流
     std::ofstream m_filestream;
     /// 上次重新打开时间
-    time_t m_lastTime = 0;
+    uint64_t m_lastTime = 0;
     /// 文件打开错误标志
     bool m_reopenError = false;
 };

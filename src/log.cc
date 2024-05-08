@@ -380,7 +380,7 @@ FileLogAppender::FileLogAppender(const std::string& file) : LogAppender(LogForma
 
 /// 距离上次写日志超过3秒，重新打开一次日志文件
 void FileLogAppender::log(LogEvent::ptr event) {
-    time_t now = event -> getTime();
+    uint64_t now = event -> getTime();
     // 如果当前时间距离上次写日志超过3秒，那就重新打开一次日志文件
     if(now >= m_lastTime + 3) {
         reopen();
@@ -639,10 +639,10 @@ struct LogIniter {
                     if(a.type == 1) ap.reset(new FileLogAppender(a.file));
                     else if(a.type == 2) {
                         // 如果以daemon方式运行，则不需要创建终端appender
-                        if(!sylar::EnvMgr::GetInstance()->has("d")) ap.reset(new StdoutLogAppender);
+                        if(!sylar::EnvMgr::GetInstance() -> has("d")) ap.reset(new StdoutLogAppender);
                         else continue;
                     }
-                    if(!a.pattern.empty()) ap->setFormatter(LogFormatter::ptr(new LogFormatter(a.pattern)));
+                    if(!a.pattern.empty()) ap -> setFormatter(LogFormatter::ptr(new LogFormatter(a.pattern)));
                     else ap -> setFormatter(LogFormatter::ptr(new LogFormatter));
                     logger -> addAppender(ap);
                 }

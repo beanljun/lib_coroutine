@@ -65,6 +65,8 @@ public:
     /// @brief 获取path的绝对路径
     /// @note 如果提供的path以/开头，那直接返回path即可，否则返回getCwd()+path
     std::string getAbsolutePath(const std::string& path) const;
+    /// @brief 获取工作路径下path的绝对路径
+    std::string getAbsoluteWorkPath(const std::string& path) const;
     /// @brief 获取配置文件路径，配置文件路径通过命令行-c选项指定，默认为当前目录下的conf文件夹
     std::string getConfigPath();
 

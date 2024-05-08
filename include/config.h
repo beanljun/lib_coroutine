@@ -284,7 +284,7 @@ public:
 template <class T, class FromStr = LexicalCast<std::string, T>, class ToStr = LexicalCast<T, std::string>>
 class ConfigVar : public ConfigVarBase {
 public:
-    typedef RWMutex RwMutexType;
+    typedef RWMutex RWMutexType;
     typedef std::shared_ptr<ConfigVar> ptr;
     typedef std::function<void (const T& old_value, const T& new_value)> on_change_cb;
 
@@ -306,12 +306,13 @@ public:
     */
     std::string toString() override {
         try {
-            RwMutexType::ReadLock lock(m_mutex);
+            //return boost::lexical_cast<std::string>(m_val);
+            RWMutexType::ReadLock lock(m_mutex);
             return ToStr()(m_val);
-        } catch (std::exception& e) {
-            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT())   << "ConfigVar::toString exception" << e.what()
-                                                << " convert: " << TypeToName<T>() << " to string"
-                                                << " name=" << m_name;
+        } catch (std::exception &e) {
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::toString exception "
+                                              << e.what() << " convert: " << TypeToName<T>() << " to string"
+                                              << " name=" << m_name;
         }
         return "";
     }
@@ -320,31 +321,31 @@ public:
     bool fromString(const std::string& val) override {
         try {
             setValue(FromStr()(val));
-        } catch (std::exception& e) {
-            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT())   << "ConfigVar::fromString exception" << e.what()
-                                                << " convert: string to " << TypeToName<T>()
-                                                << " name=" << m_name
-                                                << " - "    << val;
+        } catch (std::exception &e) {
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::fromString exception "
+                                              << e.what() << " convert: string to " << TypeToName<T>()
+                                              << " name=" << m_name
+                                              << " - " << val;
         }
         return false;
     }
 
     /// @brief 获取配置参数的值
     const T getValue() {
-        RwMutexType::ReadLock lock(m_mutex);
+        RWMutexType::ReadLock lock(m_mutex);
         return m_val;
     }
 
     /// @brief 设置配置参数的值，如果参数值发生变化，调用回调函数
     void setValue(const T& v) {
         {
-            RwMutexType::ReadLock lock(m_mutex);
+            RWMutexType::ReadLock lock(m_mutex);
             if(v == m_val) return;
             for(auto& i : m_cbs) {
                 i.second(m_val, v);
             }
         }
-        RwMutexType::WriteLock lock(m_mutex);
+        RWMutexType::WriteLock lock(m_mutex);
         m_val = v;
     }
 
@@ -354,7 +355,7 @@ public:
     /// @brief 添加变更回调函数，返回该回调函数的唯一id，用于删除
     uint64_t addListener(on_change_cb cb) {
         static uint64_t s_fun_id = 0;
-        RwMutexType::WriteLock lock(m_mutex);
+        RWMutexType::WriteLock lock(m_mutex);
         ++s_fun_id;
         m_cbs[s_fun_id] = cb;
         return s_fun_id;
@@ -362,25 +363,25 @@ public:
 
     /// @brief 删除回调函数
     void delListener(uint64_t key) {
-        RwMutexType::WriteLock lock(m_mutex);
+        RWMutexType::WriteLock lock(m_mutex);
         m_cbs.erase(key);
     }
 
     /// @brief 获取回调函数， key为回调函数的唯一id
     on_change_cb getListener(uint64_t key) {
-        RwMutexType::ReadLock lock(m_mutex);
+        RWMutexType::ReadLock lock(m_mutex);
         auto it = m_cbs.find(key);
         return it == m_cbs.end() ? nullptr : it -> second;
     }
 
     /// @brief 清空所有回调函数
     void clearListener() {
-        RwMutexType::WriteLock lock(m_mutex);
+        RWMutexType::WriteLock lock(m_mutex);
         m_cbs.clear();
     }
 
 private:
-    RwMutexType m_mutex;                    // 读写锁
+    RWMutexType m_mutex;                    // 读写锁
     T m_val;                                // 配置参数的值
     std::map<uint64_t, on_change_cb> m_cbs; // 回调函数集合
 };
@@ -388,8 +389,8 @@ private:
 
 class Config {
 public:
-    typedef RWMutex RWMutexType;
     typedef std::unordered_map<std::string, ConfigVarBase::ptr> ConfigVarMap;
+    typedef RWMutex RWMutexType;
 
     /**
      * @brief 查找配置参数

@@ -59,7 +59,7 @@ namespace sylar {
 
     /// 记录文件的修改时间
     static std::map<std::string, uint64_t> s_file2modifytime;
-    static sylar::RWMutex s_mutex;
+    static sylar::Mutex s_mutex;
 
     void Config::LoadFromConfDir(const std::string &path, bool force) {
         std::string absoulte_path = sylar::EnvMgr::GetInstance()->getAbsolutePath(path);
@@ -67,19 +67,21 @@ namespace sylar {
         sylar::FSUtil::ListAllFile(files, absoulte_path, ".yml");
 
         for (auto &i : files) {
-            struct stat st;
-            lstat(i.c_str(), &st);
-            sylar::RWMutex::WriteLock lock(s_mutex);
-            if (!force && s_file2modifytime[i] == (uint64_t)st.st_mtime)  continue;
-            s_file2modifytime[i] = st.st_mtime;
-            lock.unlock();
-
+            {
+                struct stat st;
+                lstat(i.c_str(), &st);
+                sylar::Mutex::Lock lock(s_mutex);
+                if (!force && s_file2modifytime[i] == (uint64_t)st.st_mtime)  continue;
+                s_file2modifytime[i] = st.st_mtime;
+            }
             try {
                 YAML::Node root = YAML::LoadFile(i);
                 LoadFromYaml(root);
-                SYLAR_LOG_INFO(g_logger) << "LoadConfFile file=" << i << " ok";
-            } catch (std::exception &e) {
-                SYLAR_LOG_ERROR(g_logger) << "LoadConfFile file=" << i << " failed: " << e.what();
+                SYLAR_LOG_INFO(g_logger) << "LoadConfFile file="
+                                        << i << " ok";
+            } catch (...) {
+                SYLAR_LOG_ERROR(g_logger) << "LoadConfFile file="
+                                        << i << " failed";
             }
         }
     }
@@ -88,7 +90,7 @@ namespace sylar {
         RWMutexType::ReadLock lock(GetMutex());
         ConfigVarMap &datas = GetDatas();
         for (auto it = datas.begin(); it != datas.end(); ++it) {
-            cb(it->second);
+            cb(it -> second);
         }
     }
 
