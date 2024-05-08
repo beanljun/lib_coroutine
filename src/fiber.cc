@@ -9,7 +9,9 @@
 #include <include/macro.h>
 #include "include/fiber.h"
 #include "include/log.h"
+#include "include/macro.h"
 #include "include/config.h"
+#include "include/scheduler.h"
 
 namespace sylar {
 
@@ -134,15 +136,15 @@ void Fiber::resume() {
     m_state = RUNNING;
 
     // 如果协程参与调度器调度，应该和调度器的主协程进行swap，而不是和线程的主协程进行swap，yeld同理
-    // if (m_runinscheduler) {
-    //     if(swapcontext(&(Schuduler::GetMainFiber() -> m_ctx), &m_ctx)) {
-    //         SYLAR_ASSERT2(false, "swapcontext");
-    //     }
-    // } else {
-    //     if (swapcontext(&t_thread_fiber -> m_ctx, &m_ctx)) {
-    //         SYLAR_ASSERT2(false, "swapcontext");
-    //     }
-    // }
+    if (m_runinscheduler) {
+        if(swapcontext(&(Scheduler::GetMainFiber() -> m_ctx), &m_ctx)) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        }
+    } else {
+        if (swapcontext(&t_thread_fiber -> m_ctx, &m_ctx)) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        }
+    }
 
 
 }
@@ -155,15 +157,16 @@ void Fiber::yield() {
         m_state = READY;
     }
 
-    // if (m_runinscheduler) {
-    //     if (swapcontext(&m_ctx, &(Schuduler::GetMainFiber() -> m_ctx))) {
-    //         SYLAR_ASSERT2(false, "swapcontext");
-    //     }
-    // } else {
-    //     if (swapcontext(&m_ctx, &t_thread_fiber -> m_ctx)) {
-    //         SYLAR_ASSERT2(false, "swapcontext");
-    //     }
-    // }
+    // 如果协程参与调度器调度，那么应该和调度器的主协程进行swap，而不是线程主协程
+    if (m_runinscheduler) {
+        if (swapcontext(&m_ctx, &(Scheduler::GetMainFiber() -> m_ctx))) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        }
+    } else {
+        if (swapcontext(&m_ctx, &t_thread_fiber -> m_ctx)) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        }
+    }
 }
 
 void Fiber::MainFunc() {
