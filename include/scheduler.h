@@ -54,7 +54,7 @@ public:
         bool need_tickle = false;
         {
             MutexType::Lock lock(m_mutex);
-            need_tickle = schduleNolock(fc, thread);
+            need_tickle = scheduleNoLock(fc, thread);
         }
 
         if(need_tickle) {
@@ -102,7 +102,7 @@ private:
      * @param thread 指定运行该任务的线程号， 默认为-1，表示任意线程
      */
     template <class FiberOrCb>
-    bool schduleNoLock(FiberOrCb fc, int thread) {
+    bool scheduleNoLock(FiberOrCb fc, int thread) {
         bool need_tickle = m_tasks.empty();
         ScheduleTask task(fc, thread);
 
