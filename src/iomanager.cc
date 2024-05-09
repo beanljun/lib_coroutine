@@ -302,10 +302,114 @@ bool IOManager::cancelAll(int fd) {
     return true;
 }
 
-/// TODO
+IOManager* IOManager::GetThis() {
+    return dynamic_cast<IOManager*>(Scheduler::GetThis());
+}
 
+/**
+ * 通知调度协程、也就是Scheduler::run()从idle中退出
+ * Scheduler::run()每次从idle协程中退出之后，都会重新把任务队列里的所有任务执行完了再重新进入idle
+ * 如果没有调度线程处理于idle状态，那也就没必要发通知了
+ */
+void IOManager::tickle() {
+    SYLAR_LOG_DEBUG(g_logger) << "tickle";
+    if (!hasIdleThreads())  return;
 
+    int rt = write(m_tickleFds[1], "T", 1); 
+    SYLAR_ASSERT(rt == 1);
+}
 
+bool IOManager::stopping() {
+    return m_pendingEventCount == 0 && Scheduler::stopping();
+}
 
+/**
+ * 调度器无调度任务时会阻塞idle协程上，对IO调度器而言，idle状态应该关注两件事，一是有没有新的调度任务，对应Schduler::schedule()，
+ * 如果有新的调度任务，那应该立即退出idle状态，并执行对应的任务；二是关注当前注册的所有IO事件有没有触发，如果有触发，那么应该执行
+ * IO事件对应的回调函数
+ */
+void IOManager::idle() {
+    SYLAR_LOG_DEBUG(g_logger) << "idle";
+
+    // 一次epoll_wait最多检测256个就绪事件，如果就绪事件超过了这个数，那么会在下轮epoll_wati继续处理
+    const uint64_t MAX_EVENTS = 256;    
+    epoll_event* events = new epoll_event[MAX_EVENTS]();    
+    std::shared_ptr<epoll_event> shared_events(events, [](epoll_event* ptr) { delete[] ptr; }); // 创建shared_ptr时，包括原始指针和自定义删除器，这样在shared_ptr析构时会调用自定义删除器
+
+    while(true) {
+        if(stopping()) {    // 如果调度器正在停止，那么就退出idle状态
+            SYLAR_LOG_INFO(g_logger) << "name=" << getName() << " idle stopping exit";
+            break;
+        }
+        // 阻塞在epoll_wait上，等待事件发生
+        static const int MAX_TIMEOUT = 5000;    // epoll_wait最大超时时间
+        int rt = epoll_wait(m_epfd, events, MAX_EVENTS, MAX_TIMEOUT);
+        if(rt < 0) {
+            if(errno == EINTR) continue;    // 如果是被信号中断，那么继续epoll_wait
+            SYLAR_LOG_ERROR(g_logger) << "epoll_wait(" << m_epfd << ") (rt="
+                                      << rt << ") (errno=" << errno << ") (errstr:" << strerror(errno) << ")";
+            break;
+        }
+        // 遍历所有发生的事件，根据epoll_event的私有指针找到对应的FdContext，进行事件处理
+        for(int i = 0; i < rt; ++i) {
+            epoll_event& event = events[i];
+            // 如果是管道读端的事件，那么就读取管道中的数据
+            if(event.data.fd == m_tickleFds[0]) {   
+                uint8_t dummy[256];
+                while(read(m_tickleFds[0], dummy, sizeof(dummy)) > 0);  // 读取管道中的数据，直到读完（read返回的字节数为0）
+                continue;
+            }
+
+            FdContext* fd_ctx = (FdContext*)event.data.ptr;  // 获取fd对应的上下文
+            FdContext::MutexType::Lock lock(fd_ctx -> mutex); // 加锁
+
+            /**
+             * EPOLLERR: 出错，比如写读端已经关闭的pipe
+             * EPOLLHUP: 套接字对端关闭
+             * 出现这两种事件，应该同时触发fd的读和写事件，否则有可能出现注册的事件永远执行不到的情况
+             */ 
+            if(event.events & (EPOLLERR | EPOLLHUP)) {        // 如果是错误事件或者挂起事件，那么就触发读写事件
+               event.events |= (EPOLLIN | EPOLLOUT) & fd_ctx -> events; 
+            }
+
+            int real_events = NONE;    // 实际发生的事件
+            if(event.events & EPOLLIN)  real_events |= READ;    // 如果是读事件，那么就设置实际发生的事件为读事件
+            if(event.events & EPOLLOUT) real_events |= WRITE;   // 如果是写事件，那么就设置实际发生的事件为写事件
+            if((fd_ctx -> events & real_events) == NONE) continue;  // 如果实际发生的事件和注册的事件没有交集，那么就继续处理下一个事件
+
+            // 剔除已经发生的事件，将剩下的事件重新加入epoll_wait
+            int left_events = (fd_ctx -> events & ~real_events);  // 计算剩余的事件
+            int op = left_events ? EPOLL_CTL_MOD : EPOLL_CTL_DEL; // 如果还有事件，那么就是修改事件，否则就是删除事件
+            event.events = EPOLLET | left_events;                 // 更新事件
+
+            int rt2 = epoll_ctl(m_epfd, op, fd_ctx -> fd, &event); // 对文件描述符 `fd_ctx -> fd` 执行操作 `op`，并将结果存储在 `rt2` 中。
+            if(rt2) {
+                SYLAR_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
+                                          << (EpollCtlOp)op << ", " << fd_ctx -> fd << ", " << (EPOLL_EVENTS)event.events << "):"
+                                          << rt2 << " (" << errno << ") (" << strerror(errno) << ")";
+                continue;
+            }
+
+            if(real_events & READ)  {
+                fd_ctx -> triggerEvent(READ);  // 触发读事件
+                --m_pendingEventCount;         // 减少待处理事件数量
+            }
+            if(real_events & WRITE) {
+                fd_ctx -> triggerEvent(WRITE); // 触发写事件
+                --m_pendingEventCount;         // 减少待处理事件数量
+            }
+        }
+
+        /**
+         * 一旦处理完所有的事件，idle协程yield，这样可以让调度协程(Scheduler::run)重新检查是否有新任务要调度
+         * 上面triggerEvent实际也只是把对应的fiber重新加入调度，要执行的话还要等idle协程退出
+         */ 
+        Fiber::ptr cur = Fiber::GetThis();  // 获取当前协程
+        auto raw_ptr = cur.get();           // 获取当前协程的原始指针
+        cur.reset();                        // 重置当前协程
+        raw_ptr -> yield();               // 让出当前协程的执行权
+    }
+
+}
 
 } // namespace sylar

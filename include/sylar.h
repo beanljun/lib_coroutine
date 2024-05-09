@@ -19,5 +19,6 @@
 #include "include/thread.h"
 #include "include/fiber.h"
 #include "include/scheduler.h"
+#include "include/iomanager.h"
 
 #endif
