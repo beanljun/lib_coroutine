@@ -33,6 +33,8 @@ set(LIB_SRC
     src/scheduler.cc
     src/iomanager.cc
     src/timer.cc
+    src/fd_manager.cc
+    src/hook.cc
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -56,6 +58,7 @@ sylar_add_executable(test_fiber2 "tests/test_fiber2.cpp" sylar "${LIBS}")
 sylar_add_executable(test_scheduler "tests/test_scheduler.cpp" sylar "${LIBS}")
 sylar_add_executable(test_iomanager "tests/test_iomanager.cpp" sylar "${LIBS}")
 sylar_add_executable(test_timer "tests/test_timer.cpp" sylar "${LIBS}")
+sylar_add_executable(test_hook "tests/test_hook.cpp" sylar "${LIBS}")
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
