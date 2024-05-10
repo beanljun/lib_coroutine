@@ -5,8 +5,6 @@
  * @date 2024-04-25
  */
 
-#include "include/util.h"
-#include "include/log.h"
 #include <sys/stat.h>
 #include <sys/syscall.h>
 #include <time.h>
@@ -18,12 +16,16 @@
 #include <cxxabi.h> //abi::__cxa_demangle()
 #include <algorithm> //std::transform
 
+#include "include/util.h"
+#include "include/log.h"
+#include "include/fiber.h"
+
 
 namespace sylar {
 
 pid_t GetThreadId() { return syscall(SYS_gettid); }
 
-uint64_t GetFiberId() { return 0; }
+uint64_t GetFiberId() { return Fiber::GetFiberId(); }
 
 uint64_t GetElapsedMS() {
     struct timespec ts = {0};
