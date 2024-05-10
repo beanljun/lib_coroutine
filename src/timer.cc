@@ -94,7 +94,7 @@ Timer::ptr TimerManager::addConditionTimer(uint64_t ms, std::function<void()> cb
 uint64_t TimerManager::getNextTimer() {
     RWMutexType::ReadLock lock(m_mutex);
     m_tickled = false;
-    if(m_timers.empty()) return ~0ull; // 如果定时器集合为空，返回最大值
+    if(m_timers.empty()) return ~0ull; // 如果定时器集合为空，返回最大值， ~0ull表示无符号长整型最大值
 
     const Timer::ptr& next = *m_timers.begin(); // 获取定时器集合中最早执行的定时器
     uint64_t now_ms = sylar::GetCurrentMS();
@@ -102,5 +102,56 @@ uint64_t TimerManager::getNextTimer() {
     return next -> m_next - now_ms; // 返回下次执行时间和当前时间的差值
 }
 
+void TimerManager::listExpiredCb(std::vector<std::function<void()>>& cbs) {
+    uint64_t now_ms = sylar::GetCurrentMS();
+    std::vector<Timer::ptr> expired;
+    {
+        RWMutexType::ReadLock lock(m_mutex);
+        if(m_timers.empty()) return;
+    }
 
+    RWMutexType::WriteLock lock(m_mutex);
+    if(m_timers.empty()) return; 
+    bool rollover = false; // 是否发生了时间回拨
+    if(SYLAR_UNLIKELY(detectClockRollover(now_ms)))  rollover = true; // 检测是否发生了时间回拨
+
+    if(!rollover && ((*m_timers.begin()) -> m_next > now_ms)) return; // 如果没有发生时间回拨，并且最早执行的定时器的执行时间大于当前时间，直接返回
+
+    Timer::ptr now_timer(new Timer(now_ms)); // 以当前时间创建一个定时器
+    auto it = rollover ? m_timers.end() : m_timers.lower_bound(now_timer); // 如果发生了时间回拨，从定时器集合的末尾开始查找，否则从不小于当前时间的定时器开始查找
+    while(it != m_timers.end() && (*it) -> m_next == now_ms) { // 遍历所有执行时间等于当前时间的定时器
+        ++it;
+    }
+    expired.insert(expired.begin(), m_timers.begin(), it); // 将所有执行时间小于或等于当前时间的定时器添加到过期定时器集合中
+    m_timers.erase(m_timers.begin(), it); // 从定时器集合中删除所有执行时间小于或等于当前时间的定时器
+    cbs.reserve(expired.size());         // 预留空间
+    for(auto& timer : expired) {
+        cbs.push_back(timer -> m_cb); // 将过期定时器的回调函数添加到回调函数集合中
+        if(timer -> m_recurring) { // 如果定时器是重复执行的
+            timer -> m_next = now_ms + timer -> m_ms; // 重新计算下次执行时间
+            m_timers.insert(timer); // 将定时器重新添加到定时器集合中
+        } else timer -> m_cb(); // 执行定时器的回调函数
+    }
 }
+
+void TimerManager::addTimer(Timer::ptr val, RWMutexType::WriteLock& lock) {
+    auto it = m_timers.insert(val).first; // 将定时器添加到定时器集合中, .first表示返回一个pair，pair的first表示定时器的迭代器
+    bool at_front = (it == m_timers.begin()) && !m_tickled; // 判断是否是最早执行的定时器
+    if(at_front) m_tickled = true; // 如果是最早执行的定时器，设置m_tickled为true
+    lock.unlock(); // 解锁
+    if(at_front) onTimerInsertedAtFront(); // 判断两次是为了在多线程环境中避免竞态条件，确保在解锁后，如果`at_front`仍为`true`
+}
+
+bool TimerManager::detectClockRollover(uint64_t now_ms) {
+    bool rollover = false;
+    if(now_ms < m_previousTime && now_ms < (m_previousTime - 60 * 60 * 1000)) rollover = true; // 如果当前时间小于上一次时间，并且小于上一次时间减去1小时，认为发生了时间回拨
+    m_previousTime = now_ms; // 更新上一次时间
+    return rollover;
+}
+
+bool TimerManager::hasTimer() {
+    RWMutexType::ReadLock lock(m_mutex);
+    return !m_timers.empty();
+}
+
+} // namespace sylar

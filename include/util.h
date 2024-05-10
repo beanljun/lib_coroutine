@@ -35,7 +35,7 @@ uint64_t GetFiberId();
  * @brief 获取当前启动的毫秒，使用clock_gettime()、CLOCK_MONOTONIC_RAW
  */
 
-uint64_t GetElapsed();
+uint64_t GetElapsedMS();
 
 /**
  * @brief 获取线程的名称，利用pthread_getname_np()
