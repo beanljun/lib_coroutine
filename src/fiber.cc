@@ -36,14 +36,8 @@ static ConfigVar<uint32_t>::ptr g_fiber_stack_size =
  */
 class MallocStackAllocator {
 public:
-    
-    static void* Alloc(size_t size) {
-        return malloc(size);
-    }
-
-    static void Dealloc(void* vp, size_t size) {
-        free(vp);
-    }
+    static void *Alloc(size_t size) { return malloc(size); }
+    static void Dealloc(void *vp, size_t size) { return free(vp); }
 };
 
 using StackAllocator = MallocStackAllocator;
@@ -56,7 +50,7 @@ uint64_t Fiber::GetFiberId() {
 }
 
 Fiber::Fiber() {
-    SetThis (this); // 设置当前协程
+    SetThis(this); // 设置当前协程
     m_state = RUNNING;
 
     if (getcontext( &m_ctx)) {
@@ -176,7 +170,7 @@ void Fiber::yield() {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     } else {
-        if (swapcontext(&m_ctx, &t_thread_fiber -> m_ctx)) {
+        if (swapcontext(&m_ctx, &(t_thread_fiber -> m_ctx))) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     }
@@ -194,7 +188,6 @@ void Fiber::MainFunc() {
     cur.reset();
     raw_ptr -> yield();// 协程结束时⾃动yield, 切换到主协程
 }
-
 
 
 }
