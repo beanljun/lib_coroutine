@@ -20,5 +20,6 @@
 #include "include/fiber.h"
 #include "include/scheduler.h"
 #include "include/iomanager.h"
+#include "include/timer.h"
 
 #endif

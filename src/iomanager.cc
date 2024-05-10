@@ -320,7 +320,16 @@ void IOManager::tickle() {
 }
 
 bool IOManager::stopping() {
-    return m_pendingEventCount == 0 && Scheduler::stopping();
+    uint64_t timeout = 0;
+    return stopping(timeout);
+}
+
+bool IOManager::stopping(uint64_t& timeout) {
+    // 对于IOManager而言，必须等所有待调度的IO事件都执行完了才可以退出
+    // 增加定时器功能后，还应该保证没有剩余的定时器待触发
+    timeout = getNextTimer();
+    // 如果没有定时器，没有待处理事件，调度器也在停止，那么就可以停止了
+    return timeout == ~0ull && m_pendingEventCount == 0 && Scheduler::stopping();   
 }
 
 /**
@@ -337,19 +346,34 @@ void IOManager::idle() {
     std::shared_ptr<epoll_event> shared_events(events, [](epoll_event* ptr) { delete[] ptr; }); // 创建shared_ptr时，包括原始指针和自定义删除器，这样在shared_ptr析构时会调用自定义删除器
 
     while(true) {
-        if(stopping()) {    // 如果调度器正在停止，那么就退出idle状态
+        // 获取下一个定时器的超时时间，顺便判断调度器是否停止
+        uint64_t next_timeout = 0;
+        if(SYLAR_UNLIKELY(stopping(next_timeout))) {
             SYLAR_LOG_INFO(g_logger) << "name=" << getName() << " idle stopping exit";
             break;
         }
-        // 阻塞在epoll_wait上，等待事件发生
-        static const int MAX_TIMEOUT = 5000;    // epoll_wait最大超时时间
-        int rt = epoll_wait(m_epfd, events, MAX_EVENTS, MAX_TIMEOUT);
-        if(rt < 0) {
-            if(errno == EINTR) continue;    // 如果是被信号中断，那么继续epoll_wait
-            SYLAR_LOG_ERROR(g_logger) << "epoll_wait(" << m_epfd << ") (rt="
-                                      << rt << ") (errno=" << errno << ") (errstr:" << strerror(errno) << ")";
-            break;
+        // 阻塞在epoll_wait上，等待事件发生, 如果有定时器，那么就等到定时器超时时间
+        int rt = 0;
+        do {
+            // 默认超时时间5秒，如果下一个定时器的超时时间大于5秒，仍以5秒来计算超时，避免定时器超时时间太大时，epoll_wait一直阻塞
+            static const int MAX_TIMEOUT = 5000;
+            if(next_timeout != ~0ull) next_timeout = std::min((int)next_timeout, MAX_TIMEOUT); 
+            else next_timeout = MAX_TIMEOUT;
+
+            rt = epoll_wait(m_epfd, events, MAX_EVENTS, (int)next_timeout);// 等待事件发生，返回发生的事件数量，-1表示出错，0表示超时
+            if(rt < 0 && errno == EINTR) continue;  // 如果是中断，那么就继续等待
+            else break;  // 否则，退出循环
+        } while(true);
+
+        std::vector<std::function<void()>> cbs;
+        listExpiredCb(cbs);  // 获取所有已经超时的定时器的回调函数
+        if(!cbs.empty()) {
+            for(const auto& cb : cbs) {
+                schedule(cb);  // 将所有已经超时的定时器的回调函数加入调度器
+            }
+            cbs.clear(); // 回调函数运行完了，清空
         }
+        
         // 遍历所有发生的事件，根据epoll_event的私有指针找到对应的FdContext，进行事件处理
         for(int i = 0; i < rt; ++i) {
             epoll_event& event = events[i];
@@ -409,7 +433,10 @@ void IOManager::idle() {
         cur.reset();                        // 重置当前协程
         raw_ptr -> yield();               // 让出当前协程的执行权
     }
+}
 
+void IOManager::onTimerInsertedAtFront() {
+    tickle();  // 插入定时器时，通知调度协程，让调度协程从idle状态退出
 }
 
 } // namespace sylar

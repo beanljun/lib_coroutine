@@ -16,9 +16,12 @@
 
 namespace sylar {
 
+class TimerManager;
 // 定时器类
-class Timer : public std::enable_shared_from_this<Timer> {  // 继承自std::enable_shared_from_this，用于获取当前对象的智能指针
+class Timer : public std::enable_shared_from_this<Timer> {  
+// 继承自std::enable_shared_from_this，用于获取当前对象的智能指针
 friend class TimerManager;  // 声明定时器管理器为定时器的友元类
+public:
     typedef std::shared_ptr<Timer> ptr; // 定时器的智能指针
     /// @brief  取消定时器
     bool cancel();
