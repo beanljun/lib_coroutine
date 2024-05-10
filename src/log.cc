@@ -351,7 +351,7 @@ void LogAppender::setFormatter(LogFormatter::ptr val) {
 /// 获取日志格式器
 LogFormatter::ptr LogAppender::getFormatter() {
     MutexType::Lock lock(m_mutex);
-    return m_formatter;
+    return m_formatter ? m_formatter : m_defaultFormatter;
 }
 
 /// 输出控制台日志
@@ -384,8 +384,8 @@ void FileLogAppender::log(LogEvent::ptr event) {
     // 如果当前时间距离上次写日志超过3秒，那就重新打开一次日志文件
     if(now >= m_lastTime + 3) {
         reopen();
-        m_lastTime = now;
         if(m_reopenError) std::cout << "reopen file " << m_filename << " error" << std::endl;
+        m_lastTime = now;
     }
 
     if(m_reopenError) return;

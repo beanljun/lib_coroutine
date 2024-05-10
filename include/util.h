@@ -28,13 +28,11 @@ pid_t GetThreadId();
  * @brief 获取当前协程ID
  * @todo 暂未实现，返回0
  */
-
 uint64_t GetFiberId();
 
 /**
  * @brief 获取当前启动的毫秒，使用clock_gettime()、CLOCK_MONOTONIC_RAW
  */
-
 uint64_t GetElapsedMS();
 
 /**

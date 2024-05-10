@@ -22,7 +22,7 @@ enum EpollCtlOp {
 static std::ostream& operator<<(std::ostream& os, const EpollCtlOp& op) {
     switch ((int)op) {
 #define XX(ctl) \
-    case ctl: \
+    case ctl:   \
         return os << #ctl;
         XX(EPOLL_CTL_ADD);
         XX(EPOLL_CTL_MOD);
@@ -38,12 +38,12 @@ static std::ostream& operator<<(std::ostream& os, EPOLL_EVENTS& events) {
         return os << "0";
     }
     bool first = true;
-#define XX(E) \
-    if (events & E) { \
-        if (!first) { \
+#define XX(E)          \
+    if (events & E) {  \
+        if (!first) {  \
             os << "|"; \
-        } \
-        os << #E; \
+        }              \
+        os << #E;      \
         first = false; \
     }
     XX(EPOLLIN);
@@ -70,9 +70,9 @@ IOManager::FdContext::EventContext& IOManager::FdContext::getEventContext(IOMana
         case IOManager::WRITE:
             return write;
         default:
-            SYLAR_ASSERT2(false, "getEventContext");
+        SYLAR_ASSERT2(false, "getContext");
     }
-    throw std::invalid_argument("getEventContext invalid event");   // 不会执行到这里
+    throw std::invalid_argument("getContext invalid event");
 }
 
 void IOManager::FdContext::resetEventContext(EventContext& ctx) {
@@ -89,10 +89,11 @@ void IOManager::FdContext::triggerEvent(IOManager::Event event) {
     events = (Event)(events & ~event); 
 
     EventContext& ctx = getEventContext(event);         // 获取事件上下文
-    if (ctx.cb)   ctx.cb();                             // 如果有回调函数，直接调用回调函数
+    if (ctx.cb)   ctx.scheduler -> schedule(ctx.cb);     // 如果有回调函数，调用回调函数
     else          ctx.scheduler -> schedule(ctx.fiber);   // 否则，调度器调度协程
 
     resetEventContext(ctx);                             // 重置事件上下文
+    return;
 }
 
 IOManager::IOManager(size_t threads, bool use_caller, const std::string& name)
@@ -349,7 +350,7 @@ void IOManager::idle() {
         // 获取下一个定时器的超时时间，顺便判断调度器是否停止
         uint64_t next_timeout = 0;
         if(SYLAR_UNLIKELY(stopping(next_timeout))) {
-            SYLAR_LOG_INFO(g_logger) << "name=" << getName() << " idle stopping exit";
+            SYLAR_LOG_DEBUG(g_logger) << "name=" << getName() << " idle stopping exit";
             break;
         }
         // 阻塞在epoll_wait上，等待事件发生, 如果有定时器，那么就等到定时器超时时间
@@ -380,7 +381,8 @@ void IOManager::idle() {
             // 如果是管道读端的事件，那么就读取管道中的数据
             if(event.data.fd == m_tickleFds[0]) {   
                 uint8_t dummy[256];
-                while(read(m_tickleFds[0], dummy, sizeof(dummy)) > 0);  // 读取管道中的数据，直到读完（read返回的字节数为0）
+                while(read(m_tickleFds[0], dummy, sizeof(dummy)) > 0)
+                    ;  // 读取管道中的数据，直到读完（read返回的字节数为0）
                 continue;
             }
 

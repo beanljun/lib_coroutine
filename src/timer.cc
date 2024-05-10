@@ -23,7 +23,7 @@ Timer::Timer(uint64_t ms, std::function<void()> cb, bool recurring, TimerManager
     :m_recurring(recurring)
     ,m_ms(ms)
     ,m_cb(cb)
-    ,m_manager(manager) { m_next = sylar::GetCurrentMS() + m_ms; }
+    ,m_manager(manager) { m_next = sylar::GetElapsedMS() + m_ms; }
 
 Timer::Timer(uint64_t next) : m_next(next) {}
 
@@ -46,7 +46,7 @@ bool Timer::refresh() {
     if(it == m_manager -> m_timers.end()) return false; // 如果定时器不在定时器集合中，直接返回
 
     m_manager -> m_timers.erase(it);                 // step2: 从定时器集合中删除当前定时器
-    m_next = sylar::GetCurrentMS() + m_ms;           // step3: 重新计算下次执行时间
+    m_next = sylar::GetElapsedMS() + m_ms;           // step3: 重新计算下次执行时间
     m_manager -> m_timers.insert(shared_from_this());// step4: 将当前定时器重新添加到定时器集合中
     return true;
 }
@@ -61,7 +61,7 @@ bool Timer::reset(uint64_t ms, bool from_now) {
 
     m_manager -> m_timers.erase(it); // step2: 从定时器集合中删除当前定时器
     uint64_t start_t = 0;
-    if(from_now) start_t = sylar::GetCurrentMS(); // step3: 如果是从当前时间开始计算，直接使用当前时间
+    if(from_now) start_t = sylar::GetElapsedMS(); // step3: 如果是从当前时间开始计算，直接使用当前时间
     else start_t = m_next - m_ms;                 // 否则，重新计算执行时间
     m_ms = ms;                                    
     m_next = start_t + m_ms;                      // step4: 重置的时间为开始时间+执行周期
@@ -70,7 +70,7 @@ bool Timer::reset(uint64_t ms, bool from_now) {
 }
 
 TimerManager::TimerManager() {
-    m_previousTime = sylar::GetCurrentMS();
+    m_previousTime = sylar::GetElapsedMS();
 }
 
 TimerManager::~TimerManager() {}
@@ -78,7 +78,7 @@ TimerManager::~TimerManager() {}
 Timer::ptr TimerManager::addTimer(uint64_t ms, std::function<void()> cb, bool recurring) {
     Timer::ptr timer(new Timer(ms, cb, recurring, this));   // 创建一个定时器，返回智能指针
     RWMutexType::WriteLock lock(m_mutex);
-    m_timers.insert(timer);     // 将定时器添加到定时器集合中
+    addTimer(timer, lock);     // 添加定时器
     return timer;
 }
 
@@ -97,13 +97,13 @@ uint64_t TimerManager::getNextTimer() {
     if(m_timers.empty()) return ~0ull; // 如果定时器集合为空，返回最大值， ~0ull表示无符号长整型最大值
 
     const Timer::ptr& next = *m_timers.begin(); // 获取定时器集合中最早执行的定时器
-    uint64_t now_ms = sylar::GetCurrentMS();
-    if(now_ms >= next -> m_next) return 0; // 如果当前时间大于等于下次执行时间，返回0
-    return next -> m_next - now_ms; // 返回下次执行时间和当前时间的差值
+    uint64_t now_ms = sylar::GetElapsedMS();
+    if(now_ms >= next->m_next) return 0; 
+    return next->m_next - now_ms;
 }
 
 void TimerManager::listExpiredCb(std::vector<std::function<void()>>& cbs) {
-    uint64_t now_ms = sylar::GetCurrentMS();
+    uint64_t now_ms = sylar::GetElapsedMS();
     std::vector<Timer::ptr> expired;
     {
         RWMutexType::ReadLock lock(m_mutex);
@@ -130,7 +130,7 @@ void TimerManager::listExpiredCb(std::vector<std::function<void()>>& cbs) {
         if(timer -> m_recurring) { // 如果定时器是重复执行的
             timer -> m_next = now_ms + timer -> m_ms; // 重新计算下次执行时间
             m_timers.insert(timer); // 将定时器重新添加到定时器集合中
-        } else timer -> m_cb(); // 执行定时器的回调函数
+        } else timer -> m_cb = nullptr; // 如果定时器不是重复执行的，将回调函数置为空
     }
 }
 

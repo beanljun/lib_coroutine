@@ -172,8 +172,15 @@
 
                     SYLAR_ASSERT(it -> fiber || it -> cb);//找到一个未指定线程 或者 指定线程为当前线程的任务
 
-                    // 任务队列时的协程一定是READY状态，谁会把RUNNING或TERM状态的协程加入调度呢？
-                    if(it -> fiber) SYLAR_ASSERT(it -> fiber -> getState() == Fiber::READY);
+                    // // 任务队列时的协程一定是READY状态，谁会把RUNNING或TERM状态的协程加入调度呢？
+                    // if(it -> fiber) SYLAR_ASSERT(it -> fiber -> getState() == Fiber::READY);
+                    // [BUG FIX]: hook IO相关的系统调用时，在检测到IO未就绪的情况下，会先添加对应的读写事件，再yield当前协程，等IO就绪后再resume当前协程
+                    // 多线程高并发情境下，有可能发生刚添加事件就被触发的情况，如果此时当前协程还未来得及yield，则这里就有可能出现协程状态仍为RUNNING的情况
+                    // 这里简单地跳过这种情况，以损失一点性能为代价，否则整个协程框架都要大改
+                    if(it -> fiber && it -> fiber -> getState() == Fiber::RUNNING) {
+                        ++it;
+                        continue;
+                    }
                     // 当前调度线程找到一个任务，准备开始调度，将其从任务队列中剔除，活动线程数加1
                     task = *it;
                     m_tasks.erase(it++);
@@ -202,7 +209,7 @@
                 // 进到这个分支情况一定是任务队列空了，调度idle协程即可
                 if(idle_fiber -> getState() == Fiber::TERM) {  
                     // 如果调度器没有调度任务，那么idle协程会不停地resume/yield，不会结束，如果idle协程结束了，那一定是调度器停止了
-                    SYLAR_LOG_INFO(g_logger) << "idle fiber term"; 
+                    SYLAR_LOG_DEBUG(g_logger) << "idle fiber term"; 
                     break;
                 }
                 ++m_idleThreadCount;
