@@ -81,6 +81,9 @@ public:
     }
 };
 
+// - 1  ——>  [1, 2, 3]
+// - 2  
+// - 3 
 /// 配置参数模板子类, YAML String => std::vector<T>
 template <class T>
 class LexicalCast<std::string, std::vector<T>> {
@@ -98,6 +101,10 @@ public:
     }
 };
 
+
+// [1, 2, 3] ——> - 1
+//               - 2
+//               - 3 
 /// 配置参数模板子类, std::vector<T> => YAML String
 template <class T>
 class LexicalCast<std::vector<T>, std::string> {
@@ -406,12 +413,13 @@ public:
         RWMutexType::WriteLock lock(GetMutex());
         auto it = GetDatas().find(name);
         if(it != GetDatas().end()) {
+            // 将ConfigVarBase转换为ConfigVar
             auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it -> second);
+            // 若转换成功，显示显示成功
             if(tmp) {
                 SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
                 return tmp;
             } else {
-                // 参数名存在但是类型不匹配则返回nullptr
                 SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists but type not "
                                                   << TypeToName<T>() << " real_type=" << it->second->getTypeName()
                                                   << " " << it->second->toString();
@@ -419,12 +427,16 @@ public:
             }
         }
 
-        // 如果name中包含非法字符，抛出异常
+        // 用于在当前字符串中查找第一个不属于指定字符集合的字符，并返回该字符位置的索引。如果没有找到任何字符，则返回 std::string::npos。
+        // name不全在 "abcdefghigklmnopqrstuvwxyz._012345678" 中 
+        // name中有非法字符，抛出异常
         if(name.find_first_not_of("abcdefghijklmnopqrstuvwxyz._0123456789") != std::string::npos) {
             SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name invalid " << name;
             throw std::invalid_argument(name);
         }
-
+        
+        // 若没有，则创建一个新的ConfigVar
+        // typename：用于告诉编译器 ConfigVar<T>::ptr 是一个类型而不是成员变量。
         typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_value, description));
         GetDatas()[name] = v;
         return v;

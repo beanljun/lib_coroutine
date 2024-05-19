@@ -90,15 +90,15 @@ class LogLevel {
 public:
     /// 日志级别枚举
     enum Level {
-        FATAL = 0,          ///< 致命错误
-        ALERT = 100,        ///< 警报，高优先级情况
-        CRIT = 200,         ///< 严重错误
-        ERROR = 300,        ///< 一般错误
-        WARN = 400,         ///< 警告
-        NOTICE = 500,       ///< 通知
-        INFO = 600,         ///< 一般信息
-        DEBUG = 700,        ///< 调试信息
-        NOTSET = 800        ///< 未设置    
+        FATAL = 0,        // 致命错误
+        ALERT = 1,        // 警报，高优先级情况
+        CRIT = 2,         // 严重错误
+        ERROR = 3,        // 一般错误
+        WARN = 4,         // 警告
+        NOTICE = 5,       // 通知
+        INFO = 6,         // 一般信息
+        DEBUG = 7,        // 调试信息
+        NOTSET = 8        // 未设置    
 };
 
     /// 将日志级别转换为字符串
@@ -167,26 +167,17 @@ public:
     void vprintf(const char *fmt, va_list al);
 
 private:
-    /// 日志级别
-    LogLevel::Level m_level;
-    /// 日志内容，使用stringstream存储，便于流式写入日志
-    std::stringstream m_ss;
-    /// 文件名
-    const char *m_file = nullptr;
-    /// 行号
-    int32_t m_line = 0;
-    /// 从日志器创建开始到当前的耗时
-    int64_t m_elapse = 0;
-    /// 线程id
-    uint32_t m_threadId = 0;
-    /// 协程id
-    uint64_t m_fiberId = 0;
-    /// UTC时间戳
-    time_t m_time;
-    /// 线程名称
-    std::string m_threadName;
-    /// 日志器名称
-    std::string m_loggerName;
+    
+    LogLevel::Level m_level;     // 日志级别
+    std::stringstream m_ss;       // 日志内容，使用stringstream存储，便于流式写入日志
+    const char *m_file = nullptr; // 文件名
+    int32_t m_line = 0;           // 行号
+    int64_t m_elapse = 0;           // 程序启动开始到现在的毫秒数
+    uint32_t m_threadId = 0;        // 线程id
+    uint64_t m_fiberId = 0;         // 协程id
+    time_t m_time;                  // 时间戳
+    std::string m_threadName;       // 线程名称
+    std::string m_loggerName;       // 日志器名称
 };
 
 /// 日志格式化
@@ -200,21 +191,21 @@ typedef std::shared_ptr<LogFormatter> ptr;
      * @brief 构造函数
      * @param[in] pattern 格式模板
      * @details 模板参数说明：
-     * - %%m 消息
-     * - %%p 日志级别
-     * - %%c 日志器名称
-     * - %%d 日期时间，后面可跟一对括号指定时间格式，比如%%d{%%Y-%%m-%%d %%H:%%M:%%S}，这里的格式字符与C语言strftime一致
-     * - %%r 该日志器创建后的累计运行毫秒数
-     * - %%f 文件名
-     * - %%l 行号
-     * - %%t 线程id
-     * - %%F 协程id
-     * - %%N 线程名称
-     * - %%% 百分号
-     * - %%T 制表符
-     * - %%n 换行
+     * - %m 消息
+     * - %p 日志级别
+     * - %c 日志器名称
+     * - %d 日期时间，后面可跟一对括号指定时间格式，比如%d{%Y-%m-%d %H:%M:%S}，这里的格式字符与C语言strftime一致
+     * - %r 该日志器创建后的累计运行毫秒数
+     * - %f 文件名
+     * - %l 行号
+     * - %t 线程id
+     * - %F 协程id
+     * - %N 线程名称
+     * - % 百分号
+     * - %T 制表符
+     * - %n 换行
      * 
-     * 默认格式：%%d{%%Y-%%m-%%d %%H:%%M:%%S}%%T%%t%%T%%N%%T%%F%%T[%%p]%%T[%%c]%%T%%f:%%l%%T%%m%%n
+     * 默认格式：%d{%Y-%m-%d %H:%M:%S} [%rms]%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n
      * 
      * 默认格式描述：年-月-日 时:分:秒 [累计运行毫秒数] \\t 线程id \\t 线程名称 \\t 协程id \\t [日志级别] \\t [日志器名称] \\t 文件名:行号 \\t 日志消息 换行符
      */
@@ -267,7 +258,7 @@ private:
     bool m_error = false;
 };
 
-/// 日志输出目标， 虚基类，用于派生出不同的LogAppender
+/// 日志输出目标， 抽象类，用于派生出不同的LogAppender
 ///  参考log4cpp，Appender自带一个默认的LogFormatter，以控件默认输出格式
 class LogAppender {
 public:
@@ -323,7 +314,7 @@ public:
     typedef std::shared_ptr<FileLogAppender> ptr;
 
     /**
-     * @brief 构造函数
+     * @brief 构造函数，初始化文件路径，并打开
      * @param[in] filename 文件路径
      */
     FileLogAppender(const std::string &file);
@@ -331,7 +322,7 @@ public:
     /// 写入日志事件
     void log(LogEvent::ptr event) override;
 
-    /// 重新打开日志文件
+    /// 重新打开日志文件, 如果文件已经打开，先关闭文件，再打开文件
     bool reopen();
 
     /// 将日志输出目标的配置转成YAML String
@@ -378,7 +369,10 @@ public:
     /// 清空Appender
     void clearAppenders();
 
-    /// 写入日志
+    /**
+     * 调用Logger的所有appenders将日志写一遍，
+     * Logger至少要有一个appender，否则没有输出
+     */
     void log(LogEvent::ptr event);
 
     /// 将日志器的配置转成YAML String
@@ -411,10 +405,8 @@ public:
     LogEvent::ptr getLogEvent() const { return m_event; }
 
 private:
-    /// 日志器
-    Logger::ptr m_logger;
-    /// 日志事件
-    LogEvent::ptr m_event;
+    Logger::ptr m_logger;   // 日志器
+    LogEvent::ptr m_event;  // 日志事件
 };
 
 /// 日志器管理类

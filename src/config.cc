@@ -23,14 +23,18 @@ namespace sylar {
         return it == GetDatas().end() ? nullptr : it->second;
     }
 
+    // 递归方式，遍历YAML格式的配置文件中的所有成员，将每个节点的名称和值存在list中
     static void ListAllMember(const std::string &prefix, const YAML::Node &node, std::list<std::pair<std::string, const YAML::Node>> &output) {
+        // prefix字符不合法
         if (prefix.find_first_not_of("abcdefghijklmnopqrstuvwxyz._012345678") != std::string::npos) {
             SYLAR_LOG_ERROR(g_logger) << "Config invalid name: " << prefix << " : " << node;
             return;
         }
         output.push_back(std::make_pair(prefix, node));
+        // 若解析的是map
         if (node.IsMap()) {
             for (auto it = node.begin(); it != node.end(); ++it) {
+                // 若前缀为空,说明为顶层，prefix为key的值，否则为子层，prefix为父层加上当前层。it->second为当前node
                 ListAllMember(prefix.empty() ? it->first.Scalar() : prefix + "." + it->first.Scalar(), it->second, output);
             }
         }
