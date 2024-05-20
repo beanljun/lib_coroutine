@@ -255,6 +255,8 @@ public:
     }
 
 private:
+    // m_mutex是一个原子布尔类型，具有特殊的原子性质，可以用于实现线程间同步和互斥。
+    // volatile关键字表示该变量可能会被异步修改，因此编译器不会对其进行优化，而是每次都从内存中读取该变量的值。
     volatile std::atomic_flag m_mutex;
 };
 

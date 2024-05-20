@@ -28,7 +28,7 @@ namespace sylar {
      */
     void Semaphore::wait() {
         if(sem_wait(&m_semaphore)) {
-            throw std::logic_error("sem_wait error"); //获取信号量失败,抛出异常
+            throw std::logic_error("sem_wait error"); //等待信号量失败,抛出异常
         }
     }
 
@@ -40,7 +40,7 @@ namespace sylar {
      */
     void Semaphore::notify() {
         if(sem_post(&m_semaphore)) {
-            throw std::logic_error("sem_post error"); //释放信号量失败,抛出异常
+            throw std::logic_error("sem_post error"); //通知信号量失败,抛出异常
         }
     }
 
