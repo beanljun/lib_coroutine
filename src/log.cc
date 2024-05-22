@@ -636,7 +636,7 @@ struct LogIniter {
 
                 if(it == old_value.end()) logger = SYLAR_LOG_NAME(i.name); // 新增logger
                 else {
-                    if(!(i == *it))logger == SYLAR_LOG_NAME(i.name);// 修改的logger
+                    if(!(i == *it)) logger = SYLAR_LOG_NAME(i.name);// 修改的logger
                     else continue;
                 }
                 logger -> setLevel(i.level);    // 设置level

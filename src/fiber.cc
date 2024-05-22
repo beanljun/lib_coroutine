@@ -52,12 +52,12 @@ uint64_t Fiber::GetFiberId() {
 Fiber::Fiber() {
     SetThis(this); // 设置当前协程
     m_state = RUNNING;
-
+    // 获取当前协程的上下文信息保存到m_ctx中
     if (getcontext( &m_ctx)) {
         SYLAR_ASSERT2(false, "getcontext");
     }
     ++s_fiber_count;
-    m_id = s_fiber_id++; // 协程id从0开始，用完加1
+    m_id = s_fiber_id++; 
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber() main id = " << m_id;
 }
@@ -74,6 +74,7 @@ Fiber::ptr Fiber::GetThis() {
 
     ///如果当前线程还未创建协程，则创建线程的第一个协程
     Fiber::ptr main_fiber(new Fiber);
+    // 此时当前协程应该为主协程
     SYLAR_ASSERT(t_fiber == main_fiber.get());
     t_thread_fiber = main_fiber;
     return t_fiber -> shared_from_this();
@@ -85,17 +86,21 @@ Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool run_in_scheduler)
     , m_runInScheduler(run_in_scheduler){
 
     ++s_fiber_count;
+    // 若给了初始化值则用给定值，若没有则用约定值
     m_stacksize = stacksize ? stacksize : g_fiber_stack_size -> getValue();
+    // 获得协程运行指针
     m_stack = StackAllocator::Alloc(m_stacksize);
-
+    // 保存当前协程上下文信息到m_ctx中
     if(getcontext(&m_ctx)) {
         SYLAR_ASSERT2(false, "getcontext");
     }
-
+    // uc_link置空，执行完当前context之后退出程序。
     m_ctx.uc_link = nullptr;
-    m_ctx.uc_stack.ss_sp = m_stack;
+    // 初始化栈指针
+    m_ctx.uc_stack.ss_sp = m_stack; 
+    // 初始化栈大小
     m_ctx.uc_stack.ss_size = m_stacksize;
-
+    // 指明该context入口函数
     makecontext(&m_ctx, &Fiber::MainFunc, 0);
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber() id = " << m_id;
@@ -107,16 +112,18 @@ Fiber::~Fiber() {
     --s_fiber_count;
     // 根据栈内存是否为空，进行不同的释放操作
     if (m_stack) {
-        // 有栈，为子协程， 需确保子协程为结束状态
+        // 有栈，子协程， 需确保子协程为结束状态
         SYLAR_ASSERT(m_state == TERM);
+        // 释放运行栈
         StackAllocator::Dealloc(m_stack, m_stacksize);
         SYLAR_LOG_DEBUG(g_logger) << "Dealloc Stack, id = " << m_id;
     } else {
-        // 无栈，为主协程, 主协程没有入口函数，运行状态一定为RUNNING
+        // 无栈，主协程, 释放要保证没有任务并且当前正在运行
         SYLAR_ASSERT(!m_cb);
         SYLAR_ASSERT(m_state == RUNNING);
 
         Fiber* cur = t_fiber;
+        //若当前协程为主协程，将当前协程置为空
         if (cur == this) {
             SetThis(nullptr);
         }
@@ -124,7 +131,9 @@ Fiber::~Fiber() {
 }
 
 void Fiber::reset(std::function<void()> cb) {
+    // 主协程不分配栈空间
     SYLAR_ASSERT(m_stack);
+    // 当前协程在结束状态
     SYLAR_ASSERT(m_state == TERM);
     m_cb = cb;
     if (getcontext(&m_ctx)) SYLAR_ASSERT2(false, "getcontext");
