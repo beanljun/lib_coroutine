@@ -120,13 +120,13 @@ IOManager::IOManager(size_t threads, bool use_caller, const std::string& name)
 }
 
 IOManager::~IOManager() {
-    stop();
-    close(m_epfd);
-    close(m_tickleFds[0]);
-    close(m_tickleFds[1]);
+    stop();             // 停止调度器
+    close(m_epfd);  // 关闭epoll句柄
+    close(m_tickleFds[0]);  // 关闭管道读端
+    close(m_tickleFds[1]);  // 关闭管道写端
 
     for (size_t i = 0; i < m_fdContexts.size(); ++i) {
-        if (m_fdContexts[i]) delete m_fdContexts[i];
+        if (m_fdContexts[i]) delete m_fdContexts[i]; // 释放fd对应的上下文
     }
 }
 
@@ -143,20 +143,21 @@ void IOManager::contextResize(size_t size) {
 }
 
 int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
-    // 找到fd对应的上下文，如果不存在，那么就分配一个
+    // 初始化一个 FdContext
     FdContext* fd_ctx = nullptr;
     RWMutexType::ReadLock lock(m_mutex);
+    // 从 m_fdContexts 中拿到对应的 FdContext
     if ((int)m_fdContexts.size() > fd) {    
         fd_ctx = m_fdContexts[fd];
         lock.unlock();
-    } else {                                
+    } else {     // 如果 fd 对应的 FdContext 不存在，那么就需要扩容                         
         lock.unlock();
         RWMutexType::WriteLock lock2(m_mutex);
         contextResize(fd * 1.5);
         fd_ctx = m_fdContexts[fd];
     }
 
-    //  同一个fd不允许重复添加相同的事件
+    // 一个句柄一般不会重复加同一个事件， 可能是两个不同的线程在操控同一个句柄添加事件
     FdContext::MutexType::Lock lock2(fd_ctx -> mutex);
     if (SYLAR_UNLIKELY(fd_ctx -> events & event)) {
         SYLAR_LOG_ERROR(g_logger) << "addEvent assert fd=" << fd
@@ -165,13 +166,14 @@ int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
         SYLAR_ASSERT(!(fd_ctx -> events & event));
     }
 
-    // 将新的事件加入epoll_wait，使用epoll_event的私有指针存储FdContext的位置
-    int op = fd_ctx -> events ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;  // 如果已经有事件了，那么就是修改事件，否则就是添加事件
+    // 若已经有注册的事件则为修改操作，若没有则为添加操作
+    int op = fd_ctx -> events ? EPOLL_CTL_MOD : EPOLL_CTL_ADD;  
     epoll_event epevent;
-    epevent.events = EPOLLET | fd_ctx -> events | event;        // 边缘触发，保留原有事件，添加新事件
-    epevent.data.ptr = fd_ctx;                                  // epoll_event的私有指针存储FdContext的位置
+    epevent.events = EPOLLET | fd_ctx -> events | event; // 边缘触发，保留原有事件，添加新事件
+    epevent.data.ptr = fd_ctx; // 将fd_ctx存到data的指针中
 
-    int rt = epoll_ctl(m_epfd, op, fd, &epevent);               // 添加或修改事件
+    // 注册事件
+    int rt = epoll_ctl(m_epfd, op, fd, &epevent); 
     if (rt) {
         SYLAR_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
                                   << (EpollCtlOp)op << ", " << fd << ", " << (EPOLL_EVENTS)epevent.events << "):"
@@ -182,16 +184,14 @@ int IOManager::addEvent(int fd, Event event, std::function<void()> cb) {
 
     ++m_pendingEventCount;  // 增加待处理事件数量
 
-     // 找到这个fd的event事件对应的EventContext，对其中的scheduler, cb, fiber进行赋值
     fd_ctx -> events = (Event)(fd_ctx -> events | event);                   // 更新fd_ctx的事件
     FdContext::EventContext& event_ctx = fd_ctx -> getEventContext(event);  // 获取事件上下文
     SYLAR_ASSERT(!event_ctx.scheduler && !event_ctx.fiber && !event_ctx.cb);// 断言事件上下文中的调度器，协程，回调函数都为空
 
-    // 赋值scheduler和回调函数，如果回调函数为空，则把当前协程当成回调执行体
-    event_ctx.scheduler = Scheduler::GetThis();     // 将当前调度器赋值给事件上下文的调度器
-    if (cb)     event_ctx.cb.swap(cb);              // 交换回调函数 
+    event_ctx.scheduler = Scheduler::GetThis();    // 获得当前调度器
+    if (cb)     event_ctx.cb.swap(cb);         // 交换回调函数 
     else {
-        event_ctx.fiber = Fiber::GetThis();         // 获取当前协程
+        event_ctx.fiber = Fiber::GetThis();       // 获取当前协程
         SYLAR_ASSERT2(event_ctx.fiber -> getState() == Fiber::RUNNING, "state=" << event_ctx.fiber -> getState());
     }
     return 0;
@@ -207,16 +207,16 @@ bool IOManager::delEvent(int fd, Event event) {
     lock.unlock();
 
     FdContext::MutexType::Lock lock2(fd_ctx -> mutex);
-    if (SYLAR_UNLIKELY(!(fd_ctx -> events & event)))  return false; // 如果fd对应的上下文中没有这个事件，那么直接返回false
+    if (SYLAR_UNLIKELY(!(fd_ctx -> events & event)))  return false; // 如果若没有要删除的事件，直接返回false
 
     // 清除指定的事件，表示不关心这个事件了，如果清除之后结果为0，则从epoll_wait中删除该文件描述符
     Event new_events = (Event)(fd_ctx -> events & ~event);  // 清除指定的事件
     int op = new_events ? EPOLL_CTL_MOD : EPOLL_CTL_DEL;    // 如果还有事件，那么就是修改事件，否则就是删除事件
     epoll_event epevent;
-    epevent.events = EPOLLET | new_events;                  
-    epevent.data.ptr = fd_ctx;                              
+    epevent.events = EPOLLET | new_events;                  // 水平触发模式，新的注册事件      
+    epevent.data.ptr = fd_ctx;                              // 将fd_ctx存到data的指针中                       
 
-    int rt = epoll_ctl(m_epfd, op, fd, &epevent);   
+    int rt = epoll_ctl(m_epfd, op, fd, &epevent);   // 注册事件
     if (rt) {
         SYLAR_LOG_ERROR(g_logger) << "epoll_ctl(" << m_epfd << ", "
                                   << (EpollCtlOp)op << ", " << fd << ", " << (EPOLL_EVENTS)epevent.events << "):"
@@ -226,10 +226,9 @@ bool IOManager::delEvent(int fd, Event event) {
 
     --m_pendingEventCount;  // 减少待处理事件数量
 
-    // 重置该fd对应的event事件上下文
-    fd_ctx -> events = new_events;
-    FdContext::EventContext& event_ctx = fd_ctx -> getEventContext(event);
-    fd_ctx -> resetEventContext(event_ctx);
+    fd_ctx -> events = new_events;  // 更新事件
+    FdContext::EventContext& event_ctx = fd_ctx -> getEventContext(event);  // 拿到对应事件的EventContext
+    fd_ctx -> resetEventContext(event_ctx); // 重置EventContext
     return true;
 }
 
@@ -343,8 +342,9 @@ void IOManager::idle() {
 
     // 一次epoll_wait最多检测256个就绪事件，如果就绪事件超过了这个数，那么会在下轮epoll_wati继续处理
     const uint64_t MAX_EVENTS = 256;    
-    epoll_event* events = new epoll_event[MAX_EVENTS]();    
-    std::shared_ptr<epoll_event> shared_events(events, [](epoll_event* ptr) { delete[] ptr; }); // 创建shared_ptr时，包括原始指针和自定义删除器，这样在shared_ptr析构时会调用自定义删除器
+    epoll_event* events = new epoll_event[MAX_EVENTS](); 
+    // 创建shared_ptr时，包括原始指针和自定义删除器，这样在shared_ptr析构时会调用自定义删除器，释放原始指针   
+    std::shared_ptr<epoll_event> shared_events(events, [](epoll_event* ptr) { delete[] ptr; }); 
 
     while(true) {
         // 获取下一个定时器的超时时间，顺便判断调度器是否停止

@@ -119,16 +119,21 @@
     void Scheduler::stop() {
         SYLAR_LOG_DEBUG(g_logger) << "stop";
         if(stopping()) return;
+        // 进入stop将m_stopping设为true
         m_stopping = true;
 
+        // 如果use caller，那只能由caller线程发起stop
         if(m_useCaller) {
             SYLAR_ASSERT(GetThis() == this);
         } else SYLAR_ASSERT(GetThis() != this);
 
+        // 每个线程都tickle一下
         for(size_t i = 0; i < m_threadCount; i++)  tickle();
 
+        // 使用use_caller多tickle一下
         if(m_rootFiber) tickle();
 
+        // 在use caller情况下，调度器协程结束时，应该返回caller协程
         if(m_rootFiber) {
             m_rootFiber -> resume();
             SYLAR_LOG_DEBUG(g_logger) << "m_rootFiber end";
@@ -139,7 +144,7 @@
             MutexType::Lock lock(m_mutex);
             thrs.swap(m_threads);
         }
-
+        // 等待线程执行完成
         for(auto& i : thrs) {
             i -> join();
         }

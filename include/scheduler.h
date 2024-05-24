@@ -156,6 +156,7 @@ private:
 
     bool m_useCaller;                                   /// 是否use caller
     int m_rootThread = 0;                               /// use_caller为true时，调度器所在线程的id
+    
     Fiber::ptr m_rootFiber;                             /// use_caller为true时，调度器所在线程的调度协程
     bool m_stopping = false;                             /// 是否正在停止                           
 
