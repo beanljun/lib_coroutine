@@ -185,7 +185,7 @@ class LogFormatter {
 
 public:
 
-typedef std::shared_ptr<LogFormatter> ptr;
+    typedef std::shared_ptr<LogFormatter> ptr;
 
     /**
      * @brief 构造函数
