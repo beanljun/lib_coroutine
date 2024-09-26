@@ -16,8 +16,9 @@
 
 namespace sylar {
 
-enum EpollCtlOp {
-};
+static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
+
+enum EpollCtlOp { };
 
 static std::ostream& operator<<(std::ostream& os, const EpollCtlOp& op) {
     switch ((int)op) {

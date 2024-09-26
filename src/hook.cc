@@ -8,7 +8,8 @@
 #include "include/fd_manager.h"
 #include "include/macro.h"
 
-sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
+static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
+
 namespace sylar {
 
 static sylar::ConfigVar<int>::ptr g_tcp_connect_timeout =
@@ -112,7 +113,7 @@ static ssize_t do_io(int fd, OriginFun fun, const char* hook_fun_name,
 retry:
     // 先调用原始函数读数据或写数据 若函数返回值有效就直接返回
     ssize_t n = fun(fd, std::forward<Args>(args)...);
-    SYLAR_LOG_DEBUG(sylar::g_logger) << "do_io <" << hook_fun_name << ">" << " n = " << n;
+    SYLAR_LOG_DEBUG(g_logger) << "do_io <" << hook_fun_name << ">" << " n = " << n;
     // 若中断则重试
     while(n == -1 && errno == EINTR) {
         n = fun(fd, std::forward<Args>(args)...);

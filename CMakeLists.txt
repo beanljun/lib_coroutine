@@ -36,6 +36,8 @@ set(LIB_SRC
     src/timer.cc
     src/fd_manager.cc
     src/hook.cc
+    src/address.cc
+    src/socket.cc
     )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -60,6 +62,9 @@ sylar_add_executable(test_scheduler "tests/test_scheduler.cpp" sylar "${LIBS}")
 sylar_add_executable(test_iomanager "tests/test_iomanager.cpp" sylar "${LIBS}")
 sylar_add_executable(test_timer "tests/test_timer.cpp" sylar "${LIBS}")
 sylar_add_executable(test_hook "tests/test_hook.cpp" sylar "${LIBS}")
+sylar_add_executable(test_address "tests/test_address.cpp" sylar "${LIBS}")
+sylar_add_executable(test_socket_tcp_client "tests/test_socket_tcp_client.cpp" sylar "${LIBS}")
+sylar_add_executable(test_socket_tcp_server "tests/test_socket_tcp_server.cpp" sylar "${LIBS}")
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

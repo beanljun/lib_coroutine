@@ -26,5 +26,5 @@ build
 lib
 bin
 .vscode
-./cache
-./doc
+.cache
+doc/
