@@ -3,7 +3,7 @@ project(sylar)
 
 include (cmake/utils.cmake)
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
+set(CMAKE_VERBOSE_MAKEFILE OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # 指定编译选项
@@ -23,22 +23,8 @@ include_directories(.)
 
 option(BUILD_TEST "ON for complile test" ON)
 
-set(LIB_SRC
-    src/log.cc
-    src/util.cc
-    src/mutex.cc
-    src/env.cc
-    src/config.cc
-    src/thread.cc
-    src/fiber.cc
-    src/scheduler.cc
-    src/iomanager.cc
-    src/timer.cc
-    src/fd_manager.cc
-    src/hook.cc
-    src/address.cc
-    src/socket.cc
-    )
+file(GLOB_RECURSE LIB_SRC "${PROJECT_SOURCE_DIR}/*.cc")
+
 
 add_library(sylar SHARED ${LIB_SRC})
 force_redefine_file_macro_for_sources(sylar)
@@ -65,6 +51,7 @@ sylar_add_executable(test_hook "tests/test_hook.cpp" sylar "${LIBS}")
 sylar_add_executable(test_address "tests/test_address.cpp" sylar "${LIBS}")
 sylar_add_executable(test_socket_tcp_client "tests/test_socket_tcp_client.cpp" sylar "${LIBS}")
 sylar_add_executable(test_socket_tcp_server "tests/test_socket_tcp_server.cpp" sylar "${LIBS}")
+sylar_add_executable(test_serialization "tests/test_serialization.cpp" sylar "${LIBS}")
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

@@ -5,7 +5,6 @@
  * @date 2024-09-23
  */
 
-//  #include <sys/types.h>
  #include <sys/socket.h>
  #include <netdb.h>
  #include <ifaddrs.h>

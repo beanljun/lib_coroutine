@@ -120,7 +120,9 @@ namespace sylar
     }
 
     Socket::ptr Socket::accept() {
+        // 创建一个新的Socket对象
         Socket::ptr sock(new Socket(m_family, m_type, m_protocol));
+        // 监听的套接字，客户端地址，地址长度，nullptr表示不关心客户端地址
         int newsock = ::accept(m_sock, nullptr, nullptr);
         if (newsock == -1) {
             SYLAR_LOG_ERROR(g_logger) << "accept(" << m_sock << ") errno="
@@ -147,7 +149,10 @@ namespace sylar
     }
 
     bool Socket::bind(const Address::ptr addr) {
+        // 保存本地地址
         m_localAddress = addr;
+
+        // 如果套接字无效，创建新的套接字
         if (!isValid()) {
             newSock();
             if (SYLAR_UNLIKELY(!isValid())) {
@@ -155,6 +160,7 @@ namespace sylar
             }
         }
 
+        // 检查地址族是否匹配
         if (SYLAR_UNLIKELY(addr->getFamily() != m_family)) {
             SYLAR_LOG_ERROR(g_logger) << "bind sock.family("
                                     << m_family << ") addr.family(" << addr->getFamily()
@@ -162,21 +168,27 @@ namespace sylar
             return false;
         }
 
+        // 特殊处理 Unix 域套接字
         UnixAddress::ptr uaddr = std::dynamic_pointer_cast<UnixAddress>(addr);
         if (uaddr) {
             Socket::ptr sock = Socket::CreateUnixTCPSocket();
+            // 尝试连接，如果成功则表示地址已被使用
             if (sock->connect(uaddr)) {
                 return false;
             } else {
+                // 如果连接失败，删除可能存在的旧 socket 文件
                 sylar::FSUtil::Unlink(uaddr->getPath(), true);
             }
         }
 
+        // 执行实际的 bind 操作，将套接字绑定到地址
         if (::bind(m_sock, addr->getAddr(), addr->getAddrLen())) {
             SYLAR_LOG_ERROR(g_logger) << "bind error errrno=" << errno
                                     << " errstr=" << strerror(errno);
             return false;
         }
+
+        // 获取并更新本地地址信息
         getLocalAddress();
         return true;
     }
@@ -191,7 +203,10 @@ namespace sylar
     }
 
     bool Socket::connect(const Address::ptr addr, uint64_t timeout_ms) {
+        // 保存远程地址
         m_remoteAddress = addr;
+
+        // 如果套接字无效，创建新的套接字
         if (!isValid()) {
             newSock();
             if (SYLAR_UNLIKELY(!isValid())) {
@@ -199,6 +214,7 @@ namespace sylar
             }
         }
 
+        // 检查地址族是否匹配
         if (SYLAR_UNLIKELY(addr->getFamily() != m_family)) {
             SYLAR_LOG_ERROR(g_logger) << "connect sock.family("
                                     << m_family << ") addr.family(" << addr->getFamily()
@@ -206,7 +222,9 @@ namespace sylar
             return false;
         }
 
+        // 根据是否设置超时时间，选择不同的连接方式
         if (timeout_ms == (uint64_t)-1) {
+            // 无超时限制的连接
             if (::connect(m_sock, addr->getAddr(), addr->getAddrLen())) {
                 SYLAR_LOG_ERROR(g_logger) << "sock=" << m_sock << " connect(" << addr->toString()
                                         << ") error errno=" << errno << " errstr=" << strerror(errno);
@@ -214,6 +232,7 @@ namespace sylar
                 return false;
             }
         } else {
+            // 带超时的连接
             if (::connect_with_timeout(m_sock, addr->getAddr(), addr->getAddrLen(), timeout_ms)) {
                 SYLAR_LOG_ERROR(g_logger) << "sock=" << m_sock << " connect(" << addr->toString()
                                         << ") timeout=" << timeout_ms << " error errno="
@@ -222,6 +241,8 @@ namespace sylar
                 return false;
             }
         }
+
+        // 连接成功，更新状态和地址信息
         m_isConnected = true;
         getRemoteAddress();
         getLocalAddress();
@@ -243,14 +264,15 @@ namespace sylar
 
     bool Socket::close() {
         if (!m_isConnected && m_sock == -1) {
-            return true;
+            return true;  // 已经关闭，视为成功
         }
         m_isConnected = false;
         if (m_sock != -1) {
-            ::close(m_sock);
+            int ret = ::close(m_sock);
             m_sock = -1;
+            return (ret == 0);  // 返回close操作的成功与否
         }
-        return false;
+        return true;  // 套接字已经无效，视为成功关闭
     }
 
     int Socket::send(const void *buffer, size_t length, int flags) {
@@ -264,8 +286,9 @@ namespace sylar
         if (isConnected()) {
             msghdr msg;
             memset(&msg, 0, sizeof(msg));
-            msg.msg_iov    = (iovec *)buffers;
-            msg.msg_iovlen = length;
+            msg.msg_iov    = (iovec *)buffers;  // 设置iovec数组
+            msg.msg_iovlen = length;            // 设置iovec数组长度
+            // 使用sendmsg系统调用发送数据
             return ::sendmsg(m_sock, &msg, flags);
         }
         return -1;
@@ -282,10 +305,10 @@ namespace sylar
         if (isConnected()) {
             msghdr msg;
             memset(&msg, 0, sizeof(msg));
-            msg.msg_iov     = (iovec *)buffers;
-            msg.msg_iovlen  = length;
-            msg.msg_name    = to->getAddr();
-            msg.msg_namelen = to->getAddrLen();
+            msg.msg_iov     = (iovec *)buffers;  // 设置iovec数组
+            msg.msg_iovlen  = length;            // 设置iovec数组长度
+            msg.msg_name    = to->getAddr();     // 设置目标地址
+            msg.msg_namelen = to->getAddrLen();  // 设置地址长度
             return ::sendmsg(m_sock, &msg, flags);
         }
         return -1;

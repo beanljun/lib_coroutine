@@ -25,4 +25,5 @@
 #include "include/hook.h"
 #include "include/address.h"
 #include "include/socket.h"
+#include "include/serialization.h"
 #endif
