@@ -11,7 +11,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
-#include "coroutine/sylar.h"
+#include "../sylar/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 

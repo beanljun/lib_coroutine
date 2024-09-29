@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include "coroutine/sylar.h"
+#include "../sylar/sylar.h"
 
 static sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 

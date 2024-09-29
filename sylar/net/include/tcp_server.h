@@ -51,7 +51,7 @@ namespace sylar {
         uint64_t getRecvTimeout() const { return m_recvTimeout; }
 
         // 设置服务器名称
-        void setName(const std::string& name) { m_name = name; }
+        virtual void setName(const std::string& name) { m_name = name; }
 
         // 设置读取超时时间
         void setRecvTimeout(uint64_t v) { m_recvTimeout = v; }

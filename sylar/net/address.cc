@@ -10,9 +10,9 @@
  #include <ifaddrs.h>
 
 
+#include "include/endian.h"
 #include "../include/log.h"
 #include "include/address.h"
-#include "include/endian.h"
 
 namespace sylar {
 

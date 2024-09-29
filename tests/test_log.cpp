@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-#include "coroutine/sylar.h"
+#include "../sylar/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT(); // 默认INFO级别
 
