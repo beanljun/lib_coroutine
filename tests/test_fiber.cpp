@@ -4,9 +4,10 @@
  * @version 0.1
  * @date 2021-06-15
  */
-#include "include/sylar.h"
+
 #include <string>
 #include <vector>
+#include "coroutine/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<sylar::Thread::ptr> thrs;
     for (int i = 0; i < 2; i++) {
-        thrs.push_back(sylar::Thread::ptr(
+        thrs.emplace_back(sylar::Thread::ptr(
             new sylar::Thread(&test_fiber, "thread_" + std::to_string(i))));
     }
 

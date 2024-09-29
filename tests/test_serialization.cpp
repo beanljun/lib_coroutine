@@ -5,7 +5,7 @@
  * @date 2021-09-18
  */
 #include <algorithm>
-#include "include/sylar.h"
+#include "coroutine/sylar.h"
 static sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 void test() {
 /* 
@@ -18,7 +18,7 @@ void test() {
     {                                                              \
         std::vector<type> vec;                                     \
         for (int i = 0; i < len; ++i) {                            \
-            vec.push_back(rand());                                 \
+            vec.emplace_back(rand());                                 \
         }                                                          \
         sylar::ByteArray::ptr ba(new sylar::ByteArray(base_len));  \
         for (auto &i : vec) {                                      \
@@ -58,7 +58,7 @@ void test() {
     {                                                                                 \
         std::vector<type> vec;                                                        \
         for (int i = 0; i < len; ++i) {                                               \
-            vec.push_back(rand());                                                    \
+            vec.emplace_back(rand());                                                    \
         }                                                                             \
         sylar::ByteArray::ptr ba(new sylar::ByteArray(base_len));                     \
         for (auto &i : vec) {                                                         \
@@ -107,7 +107,7 @@ void test() {
         std::vector<std::string> vec;                             \
         for (int i = 0; i < len; i++) {                           \
             random_shuffle(s.begin(), s.end());                   \
-            vec.push_back(s);                                     \
+            vec.emplace_back(s);                                     \
         }                                                         \
         sylar::ByteArray::ptr ba(new sylar::ByteArray(base_len)); \
         for (auto &i : vec) {                                     \

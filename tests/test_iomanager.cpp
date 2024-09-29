@@ -6,12 +6,12 @@
  * @version 0.1
  * @date 2021-06-16
  */
-#include "include/sylar.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
+#include "coroutine/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 
@@ -21,7 +21,7 @@ void watch_io_read();
 // 写事件回调，只执行一次，用于判断非阻塞套接字connect成功
 void do_io_write() {
     SYLAR_LOG_INFO(g_logger) << "write callback";
-    int so_err;
+    int so_err = 0;
     socklen_t len = size_t(so_err);
     getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &so_err, &len);
     if(so_err) {

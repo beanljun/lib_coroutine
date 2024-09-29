@@ -4,7 +4,7 @@
  * @version 0.1
  * @date 2021-06-15
  */
-#include "include/sylar.h"
+#include "coroutine/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < 3; i++) {
         // 带参数的线程用std::bind进行参数绑定
         sylar::Thread::ptr thr(new sylar::Thread(std::bind(func1, &arg), "thread_" + std::to_string(i)));
-        thrs.push_back(thr);
+        thrs.emplace_back(thr);
     }
 
     for(int i = 0; i < 3; i++) {
