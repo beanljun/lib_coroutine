@@ -52,6 +52,7 @@ sylar_add_executable(test_address "tests/test_address.cpp" sylar "${LIBS}")
 sylar_add_executable(test_socket_tcp_client "tests/test_socket_tcp_client.cpp" sylar "${LIBS}")
 sylar_add_executable(test_socket_tcp_server "tests/test_socket_tcp_server.cpp" sylar "${LIBS}")
 sylar_add_executable(test_serialization "tests/test_serialization.cpp" sylar "${LIBS}")
+sylar_add_executable(test_tcp_server "tests/test_tcp_server.cpp" sylar "${LIBS}")
 endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
