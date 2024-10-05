@@ -24,6 +24,7 @@
 #include "include/iomanager.h"
 #include "include/scheduler.h"
 #include "include/fd_manager.h"
+#include "include/daemon.h"
 
 #include "net/include/socket.h"
 #include "net/include/address.h"
