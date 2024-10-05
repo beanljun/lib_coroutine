@@ -29,6 +29,14 @@
 #include "net/include/address.h"
 #include "net/include/tcp_server.h"
 #include "net/include/serialization.h"
+#include "net/include/uri.h"
+
+#include "http/include/http_server.h"
+#include "http/include/http_connection.h"
+#include "http/include/http_parser.h"
+#include "http/include/http_session.h"
+#include "http/include/servlet.h"
+#include "http/include/http_parser.h"
 
 
 #endif
