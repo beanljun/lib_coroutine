@@ -14,20 +14,20 @@ int main(int argc, char *argv[]) {
     g_env->addHelp("h", "print this help message");
 
     bool is_print_help = false;
-    if(!g_env->init(argc, argv)) {
+    if (!g_env->init(argc, argv)) {
         is_print_help = true;
     }
-    if(g_env->has("h")) {
+    if (g_env->has("h")) {
         is_print_help = true;
     }
 
-    if(is_print_help) {
+    if (is_print_help) {
         g_env->printHelp();
         return 0;
     }
 
-    SYLAR_LOG_INFO(g_logger)<< "exe: " << g_env->getExe();
-    SYLAR_LOG_INFO(g_logger) <<"cwd: " << g_env->getCwd();
+    SYLAR_LOG_INFO(g_logger) << "exe: " << g_env->getExe();
+    SYLAR_LOG_INFO(g_logger) << "cwd: " << g_env->getCwd();
     SYLAR_LOG_INFO(g_logger) << "absoluth path of test: " << g_env->getAbsolutePath("test");
     SYLAR_LOG_INFO(g_logger) << "conf path:" << g_env->getConfigPath();
 

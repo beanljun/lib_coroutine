@@ -14,7 +14,7 @@ static sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
  */
 void test_fiber1() {
     SYLAR_LOG_INFO(g_logger) << "test_fiber1 begin";
-  
+
     /**
      * 协程主动让出执行权，在yield之前，协程必须再次将自己添加到调度器任务队列中，
      * 否则yield之后没人管，协程会处理未执行完的逃逸状态，测试时可以将下面这行注释掉以观察效果
@@ -63,7 +63,7 @@ void test_fiber5() {
  */
 void test_fiber4() {
     SYLAR_LOG_INFO(g_logger) << "test_fiber4 begin";
-    
+
     for (int i = 0; i < 3; i++) {
         sylar::Scheduler::GetThis()->schedule(test_fiber5, sylar::GetThreadId());
     }
@@ -74,11 +74,11 @@ void test_fiber4() {
 int main() {
     SYLAR_LOG_INFO(g_logger) << "main begin";
 
-    /** 
+    /**
      * 只使用main函数线程进行协程调度，相当于先攒下一波协程，然后切换到调度器的run方法将这些协程
      * 消耗掉，然后再返回main函数往下执行
      */
-    sylar::Scheduler sc; 
+    sylar::Scheduler sc;
 
     // 额外创建新的线程进行调度，那只要添加了调度任务，调度器马上就可以调度该任务
     // sylar::Scheduler sc(3, false);

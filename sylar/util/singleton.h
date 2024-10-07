@@ -13,7 +13,7 @@
 namespace sylar {
 namespace {
 
-template <class T, class X, int N >
+template <class T, class X, int N>
 T& GetInstanceX() {
     static T v;
     return v;
@@ -25,7 +25,7 @@ std::shared_ptr<T> GetInstanceX() {
     return v;
 }
 
-}
+}  // namespace
 
 /**
  * @brief 单例模式封装类
@@ -63,6 +63,6 @@ public:
     }
 };
 
-}
+}  // namespace sylar
 
 #endif

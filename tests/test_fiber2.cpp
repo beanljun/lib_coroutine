@@ -6,6 +6,7 @@
  */
 #include <string>
 #include <vector>
+
 #include "../sylar/sylar.h"
 
 sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();

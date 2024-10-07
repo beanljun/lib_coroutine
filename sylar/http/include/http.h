@@ -6,13 +6,14 @@
 #ifndef __HTTP_H__
 #define __HTTP_H__
 
+#include <boost/lexical_cast.hpp>
+#include <iostream>
 #include <map>
-#include <vector>
-#include <string>
 #include <memory>
 #include <sstream>
-#include <iostream>
-#include <boost/lexical_cast.hpp>
+#include <string>
+#include <vector>
+
 #include "../http-parser/http_parser.h"
 
 namespace sylar {
@@ -25,7 +26,7 @@ enum class HttpMethod {
 #define XX(num, name, string) name = num,
     HTTP_METHOD_MAP(XX)
 #undef XX
-    INVALID_METHOD
+        INVALID_METHOD
 };
 
 /**
@@ -85,10 +86,10 @@ struct CaseInsensitiveLess {
  *      @retval true 转换成功, val 为对应的值
  *      @retval false 不存在或者转换失败 val = def
  */
-template<class MapType, class T>
+template <class MapType, class T>
 bool checkGetAs(const MapType& m, const std::string& key, T& val, const T& def = T()) {
     auto it = m.find(key);
-    if(it == m.end()) {
+    if (it == m.end()) {
         val = def;
         return false;
     }
@@ -108,10 +109,10 @@ bool checkGetAs(const MapType& m, const std::string& key, T& val, const T& def =
  * @param[in] def 默认值
  * @return 如果存在且转换成功返回对应的值,否则返回默认值
  */
-template<class MapType, class T>
+template <class MapType, class T>
 T getAs(const MapType& m, const std::string& key, const T& def = T()) {
     auto it = m.find(key);
-    if(it == m.end()) {
+    if (it == m.end()) {
         return def;
     }
     try {
@@ -149,122 +150,166 @@ public:
     /**
      * @brief 返回HTTP方法
      */
-    HttpMethod getMethod() const { return m_method;}
+    HttpMethod getMethod() const {
+        return m_method;
+    }
 
     /**
      * @brief 返回HTTP版本
      */
-    uint8_t getVersion() const { return m_version;}
+    uint8_t getVersion() const {
+        return m_version;
+    }
 
     /**
      * @brief 返回HTTP请求的路径
      */
-    const std::string& getPath() const { return m_path;}
+    const std::string& getPath() const {
+        return m_path;
+    }
 
     /**
      * @brief 返回HTTP请求的查询参数
      */
-    const std::string& getQuery() const { return m_query;}
+    const std::string& getQuery() const {
+        return m_query;
+    }
 
     /**
      * @brief 返回HTTP请求的消息体
      */
-    const std::string& getBody() const { return m_body;}
+    const std::string& getBody() const {
+        return m_body;
+    }
 
     /**
      * @brief 返回HTTP请求的消息头MAP
      */
-    const MapType& getHeaders() const { return m_headers;}
+    const MapType& getHeaders() const {
+        return m_headers;
+    }
 
     /**
      * @brief 返回HTTP请求的参数MAP
      */
-    const MapType& getParams() const { return m_params;}
+    const MapType& getParams() const {
+        return m_params;
+    }
 
     /**
      * @brief 返回HTTP请求的cookie MAP
      */
-    const MapType& getCookies() const { return m_cookies;}
+    const MapType& getCookies() const {
+        return m_cookies;
+    }
 
     /**
      * @brief 设置HTTP请求的方法名
      * @param[in] v HTTP请求
      */
-    void setMethod(HttpMethod v) { m_method = v;}
+    void setMethod(HttpMethod v) {
+        m_method = v;
+    }
 
     /**
      * @brief 设置HTTP请求的协议版本
      * @param[in] v 协议版本0x11, 0x10
      */
-    void setVersion(uint8_t v) { m_version = v;}
+    void setVersion(uint8_t v) {
+        m_version = v;
+    }
 
     /**
      * @brief 设置HTTP请求的路径
      * @param[in] v 请求路径
      */
-    void setPath(const std::string& v) { m_path = v;}
+    void setPath(const std::string& v) {
+        m_path = v;
+    }
 
     /**
      * @brief 设置HTTP请求的查询参数
      * @param[in] v 查询参数
      */
-    void setQuery(const std::string& v) { m_query = v;}
+    void setQuery(const std::string& v) {
+        m_query = v;
+    }
 
     /**
      * @brief 设置HTTP请求的Fragment
      * @param[in] v fragment
      */
-    void setFragment(const std::string& v) { m_fragment = v;}
+    void setFragment(const std::string& v) {
+        m_fragment = v;
+    }
 
     /**
      * @brief 设置HTTP请求的消息体
      * @param[in] v 消息体
      */
-    void setBody(const std::string& v) { m_body = v;}
+    void setBody(const std::string& v) {
+        m_body = v;
+    }
 
     /**
      * @brief 追加HTTP请求的消息体
      * @param[in] v 追加内容
      */
-    void appendBody(const std::string &v) { m_body.append(v); }
+    void appendBody(const std::string& v) {
+        m_body.append(v);
+    }
 
     /**
      * @brief 是否自动关闭
      */
-    bool isClose() const { return m_close;}
+    bool isClose() const {
+        return m_close;
+    }
 
     /**
      * @brief 设置是否自动关闭
      */
-    void setClose(bool v) { m_close = v;}
+    void setClose(bool v) {
+        m_close = v;
+    }
 
     /**
      * @brief 是否websocket
      */
-    bool isWebsocket() const { return m_websocket;}
+    bool isWebsocket() const {
+        return m_websocket;
+    }
 
     /**
      * @brief 设置是否websocket
      */
-    void setWebsocket(bool v) { m_websocket = v;}
+    void setWebsocket(bool v) {
+        m_websocket = v;
+    }
 
     /**
      * @brief 设置HTTP请求的头部MAP
      * @param[in] v map
      */
-    void setHeaders(const MapType& v) { m_headers = v;}
+    void setHeaders(const MapType& v) {
+        m_headers = v;
+    }
 
     /**
      * @brief 设置HTTP请求的参数MAP
      * @param[in] v map
      */
-    void setParams(const MapType& v) { m_params = v;}
+    void setParams(const MapType& v) {
+        m_params = v;
+    }
 
     /**
      * @brief 设置HTTP请求的Cookie MAP
      * @param[in] v map
      */
-    void setCookies(const MapType& v) { m_cookies = v;}
+    void setCookies(const MapType& v) {
+        m_cookies = v;
+    }
 
     /**
      * @brief 获取HTTP请求的头部参数
@@ -290,7 +335,7 @@ public:
      */
     std::string getCookie(const std::string& key, const std::string& def = "");
 
-    
+
     /**
      * @brief 设置HTTP请求的头部参数
      * @param[in] key 关键字
@@ -362,7 +407,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回true,否则失败val=def
      */
-    template<class T>
+    template <class T>
     bool checkGetHeaderAs(const std::string& key, T& val, const T& def = T()) {
         return checkGetAs(m_headers, key, val, def);
     }
@@ -374,7 +419,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回对应的值,否则返回def
      */
-    template<class T>
+    template <class T>
     T getHeaderAs(const std::string& key, const T& def = T()) {
         return getAs(m_headers, key, def);
     }
@@ -387,7 +432,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回true,否则失败val=def
      */
-    template<class T>
+    template <class T>
     bool checkGetParamAs(const std::string& key, T& val, const T& def = T()) {
         initQueryParam();
         initBodyParam();
@@ -401,7 +446,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回对应的值,否则返回def
      */
-    template<class T>
+    template <class T>
     T getParamAs(const std::string& key, const T& def = T()) {
         initQueryParam();
         initBodyParam();
@@ -416,7 +461,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回true,否则失败val=def
      */
-    template<class T>
+    template <class T>
     bool checkGetCookieAs(const std::string& key, T& val, const T& def = T()) {
         initCookies();
         return checkGetAs(m_cookies, key, val, def);
@@ -429,7 +474,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回对应的值,否则返回def
      */
-    template<class T>
+    template <class T>
     T getCookieAs(const std::string& key, const T& def = T()) {
         initCookies();
         return getAs(m_cookies, key, def);
@@ -454,7 +499,8 @@ public:
     void initQueryParam();
 
     /**
-     * @brief 当content-type是application/x-www-form-urlencoded时，提取消息体中的表单参数
+     * @brief
+     * 当content-type是application/x-www-form-urlencoded时，提取消息体中的表单参数
      */
     void initBodyParam();
 
@@ -464,9 +510,11 @@ public:
     void initCookies();
 
     /**
-     * @brief 初始化，实际是判断connection是否为keep-alive，以设置是否自动关闭套接字
+     * @brief
+     * 初始化，实际是判断connection是否为keep-alive，以设置是否自动关闭套接字
      */
     void init();
+
 private:
     /// HTTP方法
     HttpMethod m_method;
@@ -476,7 +524,8 @@ private:
     bool m_close;
     /// 是否为websocket
     bool m_websocket;
-    /// 参数解析标志位，0:未解析，1:已解析url参数, 2:已解析http消息体中的参数，4:已解析cookies
+    /// 参数解析标志位，0:未解析，1:已解析url参数,
+    /// 2:已解析http消息体中的参数，4:已解析cookies
     uint8_t m_parserParamFlag;
     /// 请求的完整url
     std::string m_url;
@@ -518,86 +567,116 @@ public:
      * @brief 返回响应状态
      * @return 请求状态
      */
-    HttpStatus getStatus() const { return m_status;}
+    HttpStatus getStatus() const {
+        return m_status;
+    }
 
     /**
      * @brief 返回响应版本
      * @return 版本
      */
-    uint8_t getVersion() const { return m_version;}
+    uint8_t getVersion() const {
+        return m_version;
+    }
 
     /**
      * @brief 返回响应消息体
      * @return 消息体
      */
-    const std::string& getBody() const { return m_body;}
+    const std::string& getBody() const {
+        return m_body;
+    }
 
     /**
      * @brief 返回响应原因
      */
-    const std::string& getReason() const { return m_reason;}
+    const std::string& getReason() const {
+        return m_reason;
+    }
 
     /**
      * @brief 返回响应头部MAP
      * @return MAP
      */
-    const MapType& getHeaders() const { return m_headers;}
+    const MapType& getHeaders() const {
+        return m_headers;
+    }
 
     /**
      * @brief 设置响应状态
      * @param[in] v 响应状态
      */
-    void setStatus(HttpStatus v) { m_status = v;}
+    void setStatus(HttpStatus v) {
+        m_status = v;
+    }
 
     /**
      * @brief 设置响应版本
      * @param[in] v 版本
      */
-    void setVersion(uint8_t v) { m_version = v;}
+    void setVersion(uint8_t v) {
+        m_version = v;
+    }
 
     /**
      * @brief 设置响应消息体
      * @param[in] v 消息体
      */
-    void setBody(const std::string& v) { m_body = v;}
+    void setBody(const std::string& v) {
+        m_body = v;
+    }
 
     /**
      * @brief 追加HTTP请求的消息体
      * @param[in] v 追加内容
      */
-    void appendBody(const std::string &v) { m_body.append(v); }
+    void appendBody(const std::string& v) {
+        m_body.append(v);
+    }
 
     /**
      * @brief 设置响应原因
      * @param[in] v 原因
      */
-    void setReason(const std::string& v) { m_reason = v;}
+    void setReason(const std::string& v) {
+        m_reason = v;
+    }
 
     /**
      * @brief 设置响应头部MAP
      * @param[in] v MAP
      */
-    void setHeaders(const MapType& v) { m_headers = v;}
+    void setHeaders(const MapType& v) {
+        m_headers = v;
+    }
 
     /**
      * @brief 是否自动关闭
      */
-    bool isClose() const { return m_close;}
+    bool isClose() const {
+        return m_close;
+    }
 
     /**
      * @brief 设置是否自动关闭
      */
-    void setClose(bool v) { m_close = v;}
+    void setClose(bool v) {
+        m_close = v;
+    }
 
     /**
      * @brief 是否websocket
      */
-    bool isWebsocket() const { return m_websocket;}
+    bool isWebsocket() const {
+        return m_websocket;
+    }
 
     /**
      * @brief 设置是否websocket
      */
-    void setWebsocket(bool v) { m_websocket = v;}
+    void setWebsocket(bool v) {
+        m_websocket = v;
+    }
 
     /**
      * @brief 获取响应头部参数
@@ -628,7 +707,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回true,否则失败val=def
      */
-    template<class T>
+    template <class T>
     bool checkGetHeaderAs(const std::string& key, T& val, const T& def = T()) {
         return checkGetAs(m_headers, key, val, def);
     }
@@ -640,7 +719,7 @@ public:
      * @param[in] def 默认值
      * @return 如果存在且转换成功返回对应的值,否则返回def
      */
-    template<class T>
+    template <class T>
     T getHeaderAs(const std::string& key, const T& def = T()) {
         return getAs(m_headers, key, def);
     }
@@ -672,9 +751,13 @@ public:
      * @param[] domain cookie作用的域
      * @param[] secure 安全标志
      */
-    void setCookie(const std::string& key, const std::string& val,
-                   time_t expired = 0, const std::string& path = "",
-                   const std::string& domain = "", bool secure = false);
+    void setCookie(const std::string& key,
+                   const std::string& val,
+                   time_t             expired = 0,
+                   const std::string& path = "",
+                   const std::string& domain = "",
+                   bool               secure = false);
+
 private:
     /// 响应状态
     HttpStatus m_status;
@@ -710,7 +793,7 @@ std::ostream& operator<<(std::ostream& os, const HttpRequest& req);
  */
 std::ostream& operator<<(std::ostream& os, const HttpResponse& rsp);
 
-} // namespace http
-} // namespace sylar
+}  // namespace http
+}  // namespace sylar
 
 #endif

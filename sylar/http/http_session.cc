@@ -1,22 +1,18 @@
-#include "include/http_parser.h"
 #include "include/http_session.h"
+
+#include "include/http_parser.h"
 
 namespace sylar {
 namespace http {
 
-HttpSession::HttpSession(Socket::ptr sock, bool owner)
-    : SocketStream(sock, owner) {
-}
+HttpSession::HttpSession(Socket::ptr sock, bool owner) : SocketStream(sock, owner) {}
 
 HttpRequest::ptr HttpSession::recvRequest() {
     HttpRequestParser::ptr parser(new HttpRequestParser);
-    uint64_t buff_size = HttpRequestParser::GetHttpRequestBufferSize();
-    std::shared_ptr<char> buffer(
-        new char[buff_size], [](char *ptr) {
-            delete[] ptr;
-        });
-    char *data = buffer.get();
-    int offset = 0;
+    uint64_t               buff_size = HttpRequestParser::GetHttpRequestBufferSize();
+    std::shared_ptr<char>  buffer(new char[buff_size], [](char *ptr) { delete[] ptr; });
+    char *                 data = buffer.get();
+    int                    offset = 0;
     do {
         int len = read(data + offset, buff_size - offset);
         if (len <= 0) {
@@ -40,7 +36,7 @@ HttpRequest::ptr HttpSession::recvRequest() {
     } while (true);
 
     // 与sylar的HTTP解析库不一样的是，nodejs/http-parser解析结束时body部分已经解析完了，所以这里不再需要单独读取body
-    
+
     // int64_t length = parser->getContentLength();
     // if (length > 0) {
     //     std::string body;
@@ -63,7 +59,7 @@ HttpRequest::ptr HttpSession::recvRequest() {
     //     }
     //     parser->getData()->setBody(body);
     // }
-    
+
     parser->getData()->init();
     return parser->getData();
 }
@@ -75,5 +71,5 @@ int HttpSession::sendResponse(HttpResponse::ptr rsp) {
     return writeFixSize(data.c_str(), data.size());
 }
 
-} // namespace http
-} // namespace sylar
+}  // namespace http
+}  // namespace sylar

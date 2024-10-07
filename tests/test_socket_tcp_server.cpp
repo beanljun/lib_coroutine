@@ -20,16 +20,16 @@ void test_tcp_server() {
 
     ret = socket->bind(addr);
     SYLAR_ASSERT(ret);
-    
+
     SYLAR_LOG_INFO(g_logger) << "bind success";
 
     ret = socket->listen();
     SYLAR_ASSERT(ret);
 
-    SYLAR_LOG_INFO(g_logger) << socket->toString() ;
+    SYLAR_LOG_INFO(g_logger) << socket->toString();
     SYLAR_LOG_INFO(g_logger) << "listening...";
 
-    while(1) {
+    while (1) {
         auto client = socket->accept();
         SYLAR_ASSERT(client);
         SYLAR_LOG_INFO(g_logger) << "new client: " << client->toString();

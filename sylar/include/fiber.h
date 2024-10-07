@@ -3,13 +3,14 @@
  * @brief 轻量级协程封装
  * @author beanljun
  * @date 2024-04-20
-*/
+ */
 #ifndef __FIBER_H__
 #define __FIBER_H__
 
-#include <memory>
-#include <functional>
 #include <ucontext.h>
+
+#include <functional>
+#include <memory>
 
 #include "thread.h"
 
@@ -18,7 +19,6 @@ namespace sylar {
 class Fiber : public std::enable_shared_from_this<Fiber> {
 
 public:
-
     typedef std::shared_ptr<Fiber> ptr;
 
     /**
@@ -30,14 +30,13 @@ public:
     enum State {
         /// 就绪态，刚创建或者yield之后的状态
         READY,
-        /// 运行态，resume之后的状态 
+        /// 运行态，resume之后的状态
         RUNNING,
         /// 结束态，协程的回调函数执⾏完之后为TERM状态
         TERM
     };
 
 private:
-
     /**
      * @brief 构造函数
      * ⽆参构造函数只⽤于创建线程的第⼀个协程，也就是线程主函数对应的协程，
@@ -46,7 +45,6 @@ private:
     Fiber();
 
 public:
-
     /**
      * @brief 构造函数，创建用户协程
      * @param[in] cb 协程入口函数
@@ -81,7 +79,8 @@ public:
 
     /**
      * @brief 当前协程让出执行权
-     * 当前协程与上次resume时退到后台的协程进行交换 前者状态变为READY，后者状态变为RUNNING
+     * 当前协程与上次resume时退到后台的协程进行交换
+     * 前者状态变为READY，后者状态变为RUNNING
      */
     void yield();
 
@@ -89,26 +88,30 @@ public:
      * @brief 获取协程id
      * @return 协程id
      */
-    uint64_t getId() const { return m_id;}
+    uint64_t getId() const {
+        return m_id;
+    }
 
     /**
      * @brief 获取协程状态
      * @return 协程状态
      */
-    State getState() const { return m_state;}
+    State getState() const {
+        return m_state;
+    }
 
 public:
-
     /**
      * @brief 设置当前正在运行的协程，即设置线程局部变量t_fiber的值
-    */
-   static void SetThis(Fiber* f);
+     */
+    static void SetThis(Fiber* f);
 
     /**
      * @brief 返回当前线程正在执行的协程
      * 如果当前线程还未创建协程，则创建线程的第一个协程，且该协程为当前线程的主协程，其他协程都通过这个协程来调度
      * 也就是说，其他协程结束时，都要切回到主协程，由主协程重新选择新的协程进行resume
-     * @attention 线程如果要创建协程，那么首先应该执行一下Fiber::GetThis()，以初始化主函数协程
+     * @attention
+     * 线程如果要创建协程，那么首先应该执行一下Fiber::GetThis()，以初始化主函数协程
      */
     static Fiber::ptr GetThis();
 
@@ -128,7 +131,6 @@ public:
     static uint64_t GetFiberId();
 
 private:
-
     /// id
     uint64_t m_id = 0;
     /// 栈大小
@@ -138,15 +140,13 @@ private:
     /// 上下⽂
     ucontext_t m_ctx;
     /// 栈地址
-    void *m_stack = nullptr;
+    void* m_stack = nullptr;
     /// 入口函数
     std::function<void()> m_cb;
     /// 是否参与调度
     bool m_runInScheduler;
-
-
 };
-    
-}
 
-#endif // _FIBER_H_
+}  // namespace sylar
+
+#endif  // _FIBER_H_

@@ -25,7 +25,7 @@ int main() {
     SYLAR_LOG_INFO(g_logger) << sylar::ToUpper("hello");
     SYLAR_LOG_INFO(g_logger) << sylar::ToLower("HELLO");
     SYLAR_LOG_INFO(g_logger) << sylar::Time2Str();
-    SYLAR_LOG_INFO(g_logger) << sylar::Str2Time("1970-01-01 00:00:00"); // -28800
+    SYLAR_LOG_INFO(g_logger) << sylar::Str2Time("1970-01-01 00:00:00");  // -28800
 
     std::vector<std::string> files;
     sylar::FSUtil::ListAllFile(files, "./sylar", ".cpp");

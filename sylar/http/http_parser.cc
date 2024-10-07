@@ -3,9 +3,10 @@
  * @brief HTTP协议解析实现
  * @date 2024-10-03
  */
-#include "../include/log.h"
-#include "../include/config.h"
 #include "include/http_parser.h"
+
+#include "../include/config.h"
+#include "../include/log.h"
 
 namespace sylar {
 namespace http {
@@ -24,9 +25,9 @@ static sylar::ConfigVar<uint64_t>::ptr g_http_response_buffer_size =
 static sylar::ConfigVar<uint64_t>::ptr g_http_response_max_body_size =
     sylar::Config::Lookup("http.response.max_body_size", (uint64_t)(64 * 1024 * 1024), "http response max body size");
 
-static uint64_t s_http_request_buffer_size    = 0;
-static uint64_t s_http_request_max_body_size  = 0;
-static uint64_t s_http_response_buffer_size   = 0;
+static uint64_t s_http_request_buffer_size = 0;
+static uint64_t s_http_request_max_body_size = 0;
+static uint64_t s_http_response_buffer_size = 0;
 static uint64_t s_http_response_max_body_size = 0;
 
 uint64_t HttpRequestParser::GetHttpRequestBufferSize() {
@@ -48,34 +49,26 @@ uint64_t HttpResponseParser::GetHttpResponseMaxBodySize() {
 namespace {
 struct _RequestSizeIniter {
     _RequestSizeIniter() {
-        s_http_request_buffer_size    = g_http_request_buffer_size->getValue();
-        s_http_request_max_body_size  = g_http_request_max_body_size->getValue();
-        s_http_response_buffer_size   = g_http_response_buffer_size->getValue();
+        s_http_request_buffer_size = g_http_request_buffer_size->getValue();
+        s_http_request_max_body_size = g_http_request_max_body_size->getValue();
+        s_http_response_buffer_size = g_http_response_buffer_size->getValue();
         s_http_response_max_body_size = g_http_response_max_body_size->getValue();
 
         g_http_request_buffer_size->addListener(
-            [](const uint64_t &ov, const uint64_t &nv) {
-                s_http_request_buffer_size = nv;
-            });
+            [](const uint64_t &ov, const uint64_t &nv) { s_http_request_buffer_size = nv; });
 
         g_http_request_max_body_size->addListener(
-            [](const uint64_t &ov, const uint64_t &nv) {
-                s_http_request_max_body_size = nv;
-            });
+            [](const uint64_t &ov, const uint64_t &nv) { s_http_request_max_body_size = nv; });
 
         g_http_response_buffer_size->addListener(
-            [](const uint64_t &ov, const uint64_t &nv) {
-                s_http_response_buffer_size = nv;
-            });
+            [](const uint64_t &ov, const uint64_t &nv) { s_http_response_buffer_size = nv; });
 
         g_http_response_max_body_size->addListener(
-            [](const uint64_t &ov, const uint64_t &nv) {
-                s_http_response_max_body_size = nv;
-            });
+            [](const uint64_t &ov, const uint64_t &nv) { s_http_response_max_body_size = nv; });
     }
 };
 static _RequestSizeIniter _init;
-} // namespace
+}  // namespace
 
 /**
  * @brief http请求开始解析回调函数
@@ -87,7 +80,8 @@ static int on_request_message_begin_cb(http_parser *p) {
 
 /**
  * @brief http请求头部字段解析结束，可获取头部信息字段，如method/version等
- * @note 返回0表示成功，返回1表示该HTTP消息无消息体，返回2表示无消息体并且该连接后续不会再有消息
+ * @note
+ * 返回0表示成功，返回1表示该HTTP消息无消息体，返回2表示无消息体并且该连接后续不会再有消息
  */
 static int on_request_headers_complete_cb(http_parser *p) {
     SYLAR_LOG_DEBUG(g_logger) << "on_request_headers_complete_cb";
@@ -129,9 +123,9 @@ static int on_request_chunk_complete_cb(http_parser *p) {
 static int on_request_url_cb(http_parser *p, const char *buf, size_t len) {
     SYLAR_LOG_DEBUG(g_logger) << "on_request_url_cb, url is:" << std::string(buf, len);
 
-    int ret;
+    int                    ret;
     struct http_parser_url url_parser;
-    HttpRequestParser *parser = static_cast<HttpRequestParser *>(p->data);
+    HttpRequestParser *    parser = static_cast<HttpRequestParser *>(p->data);
 
     http_parser_url_init(&url_parser);
     ret = http_parser_parse_url(buf, len, 0, &url_parser);
@@ -140,16 +134,16 @@ static int on_request_url_cb(http_parser *p, const char *buf, size_t len) {
         return 1;
     }
     if (url_parser.field_set & (1 << UF_PATH)) {
-        parser->getData()->setPath(std::string(buf + url_parser.field_data[UF_PATH].off,
-                                               url_parser.field_data[UF_PATH].len));
+        parser->getData()->setPath(
+            std::string(buf + url_parser.field_data[UF_PATH].off, url_parser.field_data[UF_PATH].len));
     }
     if (url_parser.field_set & (1 << UF_QUERY)) {
-        parser->getData()->setQuery(std::string(buf + url_parser.field_data[UF_QUERY].off,
-                                                url_parser.field_data[UF_QUERY].len));
+        parser->getData()->setQuery(
+            std::string(buf + url_parser.field_data[UF_QUERY].off, url_parser.field_data[UF_QUERY].len));
     }
     if (url_parser.field_set & (1 << UF_FRAGMENT)) {
-        parser->getData()->setFragment(std::string(buf + url_parser.field_data[UF_FRAGMENT].off,
-                                                   url_parser.field_data[UF_FRAGMENT].len));
+        parser->getData()->setFragment(
+            std::string(buf + url_parser.field_data[UF_FRAGMENT].off, url_parser.field_data[UF_FRAGMENT].len));
     }
     return 0;
 }
@@ -186,7 +180,8 @@ static int on_request_status_cb(http_parser *p, const char *buf, size_t len) {
 
 /**
  * @brief http消息体回调
- * @note 当传输编码是chunked时，每个chunked数据段都会触发一次当前回调，所以用append的方法将所有数据组合到一起
+ * @note
+ * 当传输编码是chunked时，每个chunked数据段都会触发一次当前回调，所以用append的方法将所有数据组合到一起
  */
 static int on_request_body_cb(http_parser *p, const char *buf, size_t len) {
     std::string body(buf, len);
@@ -196,24 +191,23 @@ static int on_request_body_cb(http_parser *p, const char *buf, size_t len) {
     return 0;
 }
 
-static http_parser_settings s_request_settings = {
-    .on_message_begin    = on_request_message_begin_cb,
-    .on_url              = on_request_url_cb,
-    .on_status           = on_request_status_cb,
-    .on_header_field     = on_request_header_field_cb,
-    .on_header_value     = on_request_header_value_cb,
-    .on_headers_complete = on_request_headers_complete_cb,
-    .on_body             = on_request_body_cb,
-    .on_message_complete = on_request_message_complete_cb,
-    .on_chunk_header     = on_request_chunk_header_cb,
-    .on_chunk_complete   = on_request_chunk_complete_cb};
+static http_parser_settings s_request_settings = {.on_message_begin = on_request_message_begin_cb,
+                                                  .on_url = on_request_url_cb,
+                                                  .on_status = on_request_status_cb,
+                                                  .on_header_field = on_request_header_field_cb,
+                                                  .on_header_value = on_request_header_value_cb,
+                                                  .on_headers_complete = on_request_headers_complete_cb,
+                                                  .on_body = on_request_body_cb,
+                                                  .on_message_complete = on_request_message_complete_cb,
+                                                  .on_chunk_header = on_request_chunk_header_cb,
+                                                  .on_chunk_complete = on_request_chunk_complete_cb};
 
 HttpRequestParser::HttpRequestParser() {
     http_parser_init(&m_parser, HTTP_REQUEST);
     m_data.reset(new HttpRequest);
     m_parser.data = this;
-    m_error       = 0;
-    m_finished    = false;
+    m_error = 0;
+    m_finished = false;
 }
 
 size_t HttpRequestParser::execute(char *data, size_t len) {
@@ -243,7 +237,8 @@ static int on_response_message_begin_cb(http_parser *p) {
 
 /**
  * @brief http响应头部字段解析结束，可获取头部信息字段，如status_code/version等
- * @note 返回0表示成功，返回1表示该HTTP消息无消息体，返回2表示无消息体并且该连接后续不会再有消息
+ * @note
+ * 返回0表示成功，返回1表示该HTTP消息无消息体，返回2表示无消息体并且该连接后续不会再有消息
  */
 static int on_response_headers_complete_cb(http_parser *p) {
     SYLAR_LOG_DEBUG(g_logger) << "on_response_headers_complete_cb";
@@ -313,7 +308,8 @@ static int on_response_header_value_cb(http_parser *p, const char *buf, size_t l
  * @brief http响应状态回调
  */
 static int on_response_status_cb(http_parser *p, const char *buf, size_t len) {
-    SYLAR_LOG_DEBUG(g_logger) << "on_response_status_cb, status code is: " << p->status_code << ", status msg is: " << std::string(buf, len);
+    SYLAR_LOG_DEBUG(g_logger) << "on_response_status_cb, status code is: " << p->status_code
+                              << ", status msg is: " << std::string(buf, len);
     HttpResponseParser *parser = static_cast<HttpResponseParser *>(p->data);
     parser->getData()->setStatus(HttpStatus(p->status_code));
     return 0;
@@ -330,24 +326,23 @@ static int on_response_body_cb(http_parser *p, const char *buf, size_t len) {
     return 0;
 }
 
-static http_parser_settings s_response_settings = {
-    .on_message_begin    = on_response_message_begin_cb,
-    .on_url              = on_response_url_cb,
-    .on_status           = on_response_status_cb,
-    .on_header_field     = on_response_header_field_cb,
-    .on_header_value     = on_response_header_value_cb,
-    .on_headers_complete = on_response_headers_complete_cb,
-    .on_body             = on_response_body_cb,
-    .on_message_complete = on_response_message_complete_cb,
-    .on_chunk_header     = on_response_chunk_header_cb,
-    .on_chunk_complete   = on_response_chunk_complete_cb};
+static http_parser_settings s_response_settings = {.on_message_begin = on_response_message_begin_cb,
+                                                   .on_url = on_response_url_cb,
+                                                   .on_status = on_response_status_cb,
+                                                   .on_header_field = on_response_header_field_cb,
+                                                   .on_header_value = on_response_header_value_cb,
+                                                   .on_headers_complete = on_response_headers_complete_cb,
+                                                   .on_body = on_response_body_cb,
+                                                   .on_message_complete = on_response_message_complete_cb,
+                                                   .on_chunk_header = on_response_chunk_header_cb,
+                                                   .on_chunk_complete = on_response_chunk_complete_cb};
 
 HttpResponseParser::HttpResponseParser() {
     http_parser_init(&m_parser, HTTP_RESPONSE);
     m_data.reset(new HttpResponse);
     m_parser.data = this;
-    m_error       = 0;
-    m_finished    = false;
+    m_error = 0;
+    m_finished = false;
 }
 
 size_t HttpResponseParser::execute(char *data, size_t len) {
@@ -363,5 +358,5 @@ size_t HttpResponseParser::execute(char *data, size_t len) {
     return nparsed;
 }
 
-} // namespace http
-} // namespace sylar
+}  // namespace http
+}  // namespace sylar

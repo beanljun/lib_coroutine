@@ -5,11 +5,12 @@
  * @date 2021-06-21
  */
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 #include "../sylar/sylar.h"
 
 static sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
@@ -20,7 +21,7 @@ static sylar::Logger::ptr g_logger = SYLAR_LOG_ROOT();
 void test_sleep() {
     SYLAR_LOG_INFO(g_logger) << "test_sleep begin";
     sylar::IOManager iom;
-    
+
     /**
      * 这里的两个协程sleep是同时开始的，一共只会睡眠3秒钟，第一个协程开始sleep后，会yield到后台，
      * 第二个协程会得到执行，最终两个协程都会yield到后台，并等待睡眠时间结束，相当于两个sleep是同一起点开始的
@@ -51,10 +52,10 @@ void test_sock() {
     inet_pton(AF_INET, "36.152.44.96", &addr.sin_addr.s_addr);
 
     SYLAR_LOG_INFO(g_logger) << "begin connect";
-    int rt = connect(sock, (const sockaddr*)&addr, sizeof(addr));
+    int rt = connect(sock, (const sockaddr *)&addr, sizeof(addr));
     SYLAR_LOG_INFO(g_logger) << "connect rt=" << rt << " errno=" << errno;
 
-    if(rt) {
+    if (rt) {
         return;
     }
 
@@ -62,7 +63,7 @@ void test_sock() {
     rt = send(sock, data, sizeof(data), 0);
     SYLAR_LOG_INFO(g_logger) << "send rt=" << rt << " errno=" << errno;
 
-    if(rt <= 0) {
+    if (rt <= 0) {
         return;
     }
 
@@ -72,7 +73,7 @@ void test_sock() {
     rt = recv(sock, &buff[0], buff.size(), 0);
     SYLAR_LOG_INFO(g_logger) << "recv rt=" << rt << " errno=" << errno;
 
-    if(rt <= 0) {
+    if (rt <= 0) {
         return;
     }
 

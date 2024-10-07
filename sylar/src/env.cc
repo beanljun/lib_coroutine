@@ -3,17 +3,19 @@
  * @brief 环境变量管理接口实现
  * @author beanljun
  * @date 2024-04-26
-*/
+ */
 
+#include "../include/env.h"
+
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <stdlib.h>
-#include <iostream>
-#include <iomanip>
 
-#include "../util/util.h"
-#include "../include/env.h"
+#include <iomanip>
+#include <iostream>
+
 #include "../include/config.h"
+#include "../util/util.h"
 
 namespace sylar {
 
@@ -28,13 +30,14 @@ bool Env::init(int argc, char** argv) {
 
     auto pos = m_exe.find_last_of('/');
     m_cwd = m_exe.substr(0, pos) + "/";
-    
+
     m_program = argv[0];
     const char* now_key = nullptr;
-    for(int i = 1; i < argc; ++i) {
-        if(argv[i][0] == '-') {
-            if(strlen(argv[i]) > 1) {
-                if(now_key) add(now_key, "");
+    for (int i = 1; i < argc; ++i) {
+        if (argv[i][0] == '-') {
+            if (strlen(argv[i]) > 1) {
+                if (now_key)
+                    add(now_key, "");
 
                 now_key = argv[i] + 1;
             } else {
@@ -42,7 +45,7 @@ bool Env::init(int argc, char** argv) {
                 return false;
             }
         } else {
-            if(now_key) {
+            if (now_key) {
                 add(now_key, argv[i]);
                 now_key = nullptr;
             } else {
@@ -52,8 +55,9 @@ bool Env::init(int argc, char** argv) {
         }
     }
 
-    if(now_key) add(now_key, "");
-    return true;  
+    if (now_key)
+        add(now_key, "");
+    return true;
 }
 
 void Env::add(const std::string& key, const std::string& val) {
@@ -73,8 +77,8 @@ void Env::del(const std::string& key) {
 
 std::string Env::get(const std::string& key, const std::string& default_value) {
     RWMutexType::ReadLock lock(m_mutex);
-    auto it = m_args.find(key);
-    return it == m_args.end() ? default_value : it -> second;
+    auto                  it = m_args.find(key);
+    return it == m_args.end() ? default_value : it->second;
 }
 
 void Env::addHelp(const std::string& key, const std::string& desc) {
@@ -85,16 +89,18 @@ void Env::addHelp(const std::string& key, const std::string& desc) {
 
 void Env::removeHelp(const std::string& key) {
     RWMutexType::WriteLock lock(m_mutex);
-    for(auto it = m_helps.begin(); it != m_helps.end();) {
-        if(it -> first == key)  m_helps.erase(it);
-        else ++it;
+    for (auto it = m_helps.begin(); it != m_helps.end();) {
+        if (it->first == key)
+            m_helps.erase(it);
+        else
+            ++it;
     }
 }
 
 void Env::printHelp() {
     RWMutexType::ReadLock lock(m_mutex);
     std::cout << "Usage: " << m_program << " [options]" << std::endl;
-    for(auto& i : m_helps) {
+    for (auto& i : m_helps) {
         std::cout << std::setw(5) << "-" << i.first << " : " << i.second << std::endl;
     }
 }
@@ -109,17 +115,21 @@ std::string Env::getEnv(const std::string& key, const std::string& default_value
 }
 
 std::string Env::getAbsolutePath(const std::string& path) const {
-    if(path.empty())    return "/";
-    if(path[0] == '/')  return path;
+    if (path.empty())
+        return "/";
+    if (path[0] == '/')
+        return path;
     return m_cwd + path;
 }
 
 std::string Env::getAbsoluteWorkPath(const std::string& path) const {
-    if(path.empty())     return "/";
-    if(path[0] == '/')   return path;
+    if (path.empty())
+        return "/";
+    if (path[0] == '/')
+        return path;
     static sylar::ConfigVar<std::string>::ptr g_server_work_path =
         sylar::Config::Lookup<std::string>("server.work_path");
-    return g_server_work_path -> getValue() + "/" + path;
+    return g_server_work_path->getValue() + "/" + path;
 }
 
 std::string Env::getConfigPath() {

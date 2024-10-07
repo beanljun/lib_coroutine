@@ -3,32 +3,33 @@
  * @brief 配置管理模块
  * @author beanljun
  * @date 2024-04-27
-*/
+ */
 
 #ifndef __CONFIG_H__
 #define __CONFIG_H__
 
-#include <map>
-#include <set>
+#include <yaml-cpp/yaml.h>
+
+#include <boost/lexical_cast.hpp>
+#include <functional>
 #include <list>
-#include <vector>
+#include <map>
+#include <memory>
+#include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
-#include <memory>
-#include <sstream>
-#include <functional>
-#include <yaml-cpp/yaml.h>
-#include <boost/lexical_cast.hpp>
+#include <vector>
 
+#include "../util/util.h"
 #include "log.h"
 #include "mutex.h"
-#include "../util/util.h"
 
 namespace sylar {
 
-    /// 配置变量的基类
-    /// 抽象类，仅提供接口，不能实例化，只能用于派生
+/// 配置变量的基类
+/// 抽象类，仅提供接口，不能实例化，只能用于派生
 class ConfigVarBase {
 public:
     typedef std::shared_ptr<ConfigVarBase> ptr;
@@ -37,20 +38,23 @@ public:
      * @brief 构造函数
      * @param[in] name 配置参数名称
      * @param[in] description 配置参数描述
-    */
+     */
     ConfigVarBase(const std::string& name, const std::string& description = "")
-        :m_name(name)
-        ,m_description(description) {
-            std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
-        }
+        : m_name(name), m_description(description) {
+        std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
+    }
     /// @brief 析构函数，虚函数，为了让派生类重写，释放资源
     virtual ~ConfigVarBase() {}
 
     /// @brief 获取配置参数名称
-    const std::string& getName() const { return m_name; }
+    const std::string& getName() const {
+        return m_name;
+    }
 
     /// @brief 获取配置参数描述
-    const std::string& getDescription() const { return m_description; }
+    const std::string& getDescription() const {
+        return m_description;
+    }
 
     /// @brief 转成字符串，纯虚函数，子类必须实现
     virtual std::string toString() = 0;
@@ -82,17 +86,17 @@ public:
 };
 
 // - 1  ——>  [1, 2, 3]
-// - 2  
-// - 3 
+// - 2
+// - 3
 /// 配置参数模板子类, YAML String => std::vector<T>
 template <class T>
 class LexicalCast<std::string, std::vector<T>> {
 public:
     std::vector<T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node              node = YAML::Load(v);
         typename std::vector<T> vec;
-        std::stringstream ss;
-        for(size_t i = 0; i < node.size(); ++i) {
+        std::stringstream       ss;
+        for (size_t i = 0; i < node.size(); ++i) {
             ss.str("");
             ss << node[i];
             vec.emplace_back(LexicalCast<std::string, T>()(ss.str()));
@@ -104,14 +108,14 @@ public:
 
 // [1, 2, 3] ——> - 1
 //               - 2
-//               - 3 
+//               - 3
 /// 配置参数模板子类, std::vector<T> => YAML String
 template <class T>
 class LexicalCast<std::vector<T>, std::string> {
 public:
     std::string operator()(const std::vector<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence); // 序列节点
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Sequence);  // 序列节点
+        for (auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
         std::stringstream ss;
@@ -125,10 +129,10 @@ template <class T>
 class LexicalCast<std::string, std::list<T>> {
 public:
     std::list<T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node            node = YAML::Load(v);
         typename std::list<T> vec;
-        std::stringstream ss;
-        for(size_t i = 0; i < node.size(); ++i) {
+        std::stringstream     ss;
+        for (size_t i = 0; i < node.size(); ++i) {
             ss.str("");
             ss << node[i];
             vec.emplace_back(LexicalCast<std::string, T>()(ss.str()));
@@ -142,8 +146,8 @@ template <class T>
 class LexicalCast<std::list<T>, std::string> {
 public:
     std::string operator()(const std::list<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence); // 序列节点
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Sequence);  // 序列节点
+        for (auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
         std::stringstream ss;
@@ -157,10 +161,10 @@ template <class T>
 class LexicalCast<std::string, std::set<T>> {
 public:
     std::set<T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node           node = YAML::Load(v);
         typename std::set<T> vec;
-        std::stringstream ss;
-        for(size_t i = 0; i < node.size(); ++i) {
+        std::stringstream    ss;
+        for (size_t i = 0; i < node.size(); ++i) {
             ss.str("");
             ss << node[i];
             vec.insert(LexicalCast<std::string, T>()(ss.str()));
@@ -174,8 +178,8 @@ template <class T>
 class LexicalCast<std::set<T>, std::string> {
 public:
     std::string operator()(const std::set<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence); 
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Sequence);
+        for (auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
         std::stringstream ss;
@@ -189,10 +193,10 @@ template <class T>
 class LexicalCast<std::string, std::unordered_set<T>> {
 public:
     std::unordered_set<T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node                     node = YAML::Load(v);
         typename std::unordered_set<T> vec;
-        std::stringstream ss;
-        for(size_t i = 0; i < node.size(); ++i) {
+        std::stringstream              ss;
+        for (size_t i = 0; i < node.size(); ++i) {
             ss.str("");
             ss << node[i];
             vec.insert(LexicalCast<std::string, T>()(ss.str()));
@@ -206,8 +210,8 @@ template <class T>
 class LexicalCast<std::unordered_set<T>, std::string> {
 public:
     std::string operator()(const std::unordered_set<T>& v) {
-        YAML::Node node(YAML::NodeType::Sequence); 
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Sequence);
+        for (auto& i : v) {
             node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
         }
         std::stringstream ss;
@@ -221,13 +225,13 @@ template <class T>
 class LexicalCast<std::string, std::map<std::string, T>> {
 public:
     std::map<std::string, T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node                        node = YAML::Load(v);
         typename std::map<std::string, T> vec;
-        std::stringstream ss;
-        for(auto it = node.begin(); it != node.end(); ++it) {
+        std::stringstream                 ss;
+        for (auto it = node.begin(); it != node.end(); ++it) {
             ss.str("");
-            ss << it -> second;
-            vec.insert(std::make_pair(it -> first.Scalar(), LexicalCast<std::string, T>()(ss.str())));
+            ss << it->second;
+            vec.insert(std::make_pair(it->first.Scalar(), LexicalCast<std::string, T>()(ss.str())));
         }
         return vec;
     }
@@ -238,8 +242,8 @@ template <class T>
 class LexicalCast<std::map<std::string, T>, std::string> {
 public:
     std::string operator()(const std::map<std::string, T>& v) {
-        YAML::Node node(YAML::NodeType::Map); 
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Map);
+        for (auto& i : v) {
             node[i.first] = YAML::Load(LexicalCast<T, std::string>()(i.second));
         }
         std::stringstream ss;
@@ -253,13 +257,13 @@ template <class T>
 class LexicalCast<std::string, std::unordered_map<std::string, T>> {
 public:
     std::unordered_map<std::string, T> operator()(const std::string& v) {
-        YAML::Node node = YAML::Load(v);
+        YAML::Node                                  node = YAML::Load(v);
         typename std::unordered_map<std::string, T> vec;
-        std::stringstream ss;
-        for(auto it = node.begin(); it != node.end(); ++it) {
+        std::stringstream                           ss;
+        for (auto it = node.begin(); it != node.end(); ++it) {
             ss.str("");
-            ss << it -> second;
-            vec.insert(std::make_pair(it -> first.Scalar(), LexicalCast<std::string, T>()(ss.str())));
+            ss << it->second;
+            vec.insert(std::make_pair(it->first.Scalar(), LexicalCast<std::string, T>()(ss.str())));
         }
         return vec;
     }
@@ -270,8 +274,8 @@ template <class T>
 class LexicalCast<std::unordered_map<std::string, T>, std::string> {
 public:
     std::string operator()(const std::unordered_map<std::string, T>& v) {
-        YAML::Node node(YAML::NodeType::Map); 
-        for(auto& i : v) {
+        YAML::Node node(YAML::NodeType::Map);
+        for (auto& i : v) {
             node[i.first] = YAML::Load(LexicalCast<T, std::string>()(i.second));
         }
         std::stringstream ss;
@@ -287,39 +291,39 @@ public:
  *          ToStr   从T转换为std::string的转换模板
  *          std::string 为YAML格式的字符串
  * @note 该类是一个具体类，可以实例化
-*/
+ */
 template <class T, class FromStr = LexicalCast<std::string, T>, class ToStr = LexicalCast<T, std::string>>
 class ConfigVar : public ConfigVarBase {
 public:
-    typedef RWMutex RWMutexType;
-    typedef std::shared_ptr<ConfigVar> ptr;
-    typedef std::function<void (const T& old_value, const T& new_value)> on_change_cb;
+    typedef RWMutex                                                     RWMutexType;
+    typedef std::shared_ptr<ConfigVar>                                  ptr;
+    typedef std::function<void(const T& old_value, const T& new_value)> on_change_cb;
 
     /**
      * @brief 构造函数
      * @param[in] name 配置参数名称
      * @param[in] default_value 配置参数的默认值
      * @param[in] description 配置参数描述
-    */
-    ConfigVar(const std::string& name ,const T& default_value ,const std::string& description = "")
-        :ConfigVarBase(name, description)
-        ,m_val(default_value) { }
+     */
+    ConfigVar(const std::string& name, const T& default_value, const std::string& description = "")
+        : ConfigVarBase(name, description), m_val(default_value) {}
 
     /**
      * @brief 将配置参数值转换成YAML String
      * @details try catch异常处理，转换失败时打印日志
-     *          try {} 里面的代码可能会抛出异常，如果抛出异常，会被catch捕获，然后执行catch里面的代码
+     *          try {}
+     * 里面的代码可能会抛出异常，如果抛出异常，会被catch捕获，然后执行catch里面的代码
      * @exception 当转换失败时抛出异常
-    */
+     */
     std::string toString() override {
         try {
-            //return boost::lexical_cast<std::string>(m_val);
+            // return boost::lexical_cast<std::string>(m_val);
             RWMutexType::ReadLock lock(m_mutex);
             return ToStr()(m_val);
-        } catch (std::exception &e) {
-            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::toString exception "
-                                              << e.what() << " convert: " << TypeToName<T>() << " to string"
-                                              << " name=" << m_name;
+        } catch (std::exception& e) {
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT())
+                << "ConfigVar::toString exception " << e.what() << " convert: " << TypeToName<T>() << " to string"
+                << " name=" << m_name;
         }
         return "";
     }
@@ -328,11 +332,10 @@ public:
     bool fromString(const std::string& val) override {
         try {
             setValue(FromStr()(val));
-        } catch (std::exception &e) {
-            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::fromString exception "
-                                              << e.what() << " convert: string to " << TypeToName<T>()
-                                              << " name=" << m_name
-                                              << " - " << val;
+        } catch (std::exception& e) {
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT())
+                << "ConfigVar::fromString exception " << e.what() << " convert: string to " << TypeToName<T>()
+                << " name=" << m_name << " - " << val;
         }
         return false;
     }
@@ -347,8 +350,9 @@ public:
     void setValue(const T& v) {
         {
             RWMutexType::ReadLock lock(m_mutex);
-            if(v == m_val) return;
-            for(auto& i : m_cbs) {
+            if (v == m_val)
+                return;
+            for (auto& i : m_cbs) {
                 i.second(m_val, v);
             }
         }
@@ -357,11 +361,13 @@ public:
     }
 
     /// @brief 获取配置参数的类型名称
-    std::string getTypeName() const override { return TypeToName<T>(); }
+    std::string getTypeName() const override {
+        return TypeToName<T>();
+    }
 
     /// @brief 添加变更回调函数，返回该回调函数的唯一id，用于删除
     uint64_t addListener(on_change_cb cb) {
-        static uint64_t s_fun_id = 0;
+        static uint64_t        s_fun_id = 0;
         RWMutexType::WriteLock lock(m_mutex);
         ++s_fun_id;
         m_cbs[s_fun_id] = cb;
@@ -377,8 +383,8 @@ public:
     /// @brief 获取回调函数， key为回调函数的唯一id
     on_change_cb getListener(uint64_t key) {
         RWMutexType::ReadLock lock(m_mutex);
-        auto it = m_cbs.find(key);
-        return it == m_cbs.end() ? nullptr : it -> second;
+        auto                  it = m_cbs.find(key);
+        return it == m_cbs.end() ? nullptr : it->second;
     }
 
     /// @brief 清空所有回调函数
@@ -388,16 +394,16 @@ public:
     }
 
 private:
-    RWMutexType m_mutex;                    // 读写锁
-    T m_val;                                // 配置参数的值
-    std::map<uint64_t, on_change_cb> m_cbs; // 回调函数集合
+    RWMutexType                      m_mutex;  // 读写锁
+    T                                m_val;    // 配置参数的值
+    std::map<uint64_t, on_change_cb> m_cbs;    // 回调函数集合
 };
 
 
 class Config {
 public:
     typedef std::unordered_map<std::string, ConfigVarBase::ptr> ConfigVarMap;
-    typedef RWMutex RWMutexType;
+    typedef RWMutex                                             RWMutexType;
 
     /**
      * @brief 查找配置参数
@@ -407,34 +413,36 @@ public:
      * @details 如果名为name的配置参数存在，返回该配置参数
      *          如果不存在，创建一个默认值为default_value的配置参数，并返回
      * @exception 当name中包含非法字符[^0-9a-z_.]时，抛出异常
-    */
+     */
     template <class T>
-    static typename ConfigVar<T>::ptr Lookup(const std::string& name, const T& default_value, const std::string& description = "") {
+    static typename ConfigVar<T>::ptr Lookup(const std::string& name,
+                                             const T&           default_value,
+                                             const std::string& description = "") {
         RWMutexType::WriteLock lock(GetMutex());
-        auto it = GetDatas().find(name);
-        if(it != GetDatas().end()) {
+        auto                   it = GetDatas().find(name);
+        if (it != GetDatas().end()) {
             // 将ConfigVarBase转换为ConfigVar
-            auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it -> second);
+            auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
             // 若转换成功，显示显示成功
-            if(tmp) {
+            if (tmp) {
                 SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
                 return tmp;
             } else {
-                SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists but type not "
-                                                  << TypeToName<T>() << " real_type=" << it->second->getTypeName()
-                                                  << " " << it->second->toString();
+                SYLAR_LOG_ERROR(SYLAR_LOG_ROOT())
+                    << "Lookup name=" << name << " exists but type not " << TypeToName<T>()
+                    << " real_type=" << it->second->getTypeName() << " " << it->second->toString();
                 return nullptr;
             }
         }
 
-        // 用于在当前字符串中查找第一个不属于指定字符集合的字符，并返回该字符位置的索引。如果没有找到任何字符，则返回 std::string::npos。
-        // name不全在 "abcdefghigklmnopqrstuvwxyz._012345678" 中 
-        // name中有非法字符，抛出异常
-        if(name.find_first_not_of("abcdefghijklmnopqrstuvwxyz._0123456789") != std::string::npos) {
+        // 用于在当前字符串中查找第一个不属于指定字符集合的字符，并返回该字符位置的索引。如果没有找到任何字符，则返回
+        // std::string::npos。 name不全在
+        // "abcdefghigklmnopqrstuvwxyz._012345678" 中 name中有非法字符，抛出异常
+        if (name.find_first_not_of("abcdefghijklmnopqrstuvwxyz._0123456789") != std::string::npos) {
             SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name invalid " << name;
             throw std::invalid_argument(name);
         }
-        
+
         // 若没有，则创建一个新的ConfigVar
         // typename：用于告诉编译器 ConfigVar<T>::ptr 是一个类型而不是成员变量。
         typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_value, description));
@@ -446,13 +454,14 @@ public:
      * @brief 查找配置参数
      * @param[in] name 配置参数名称
      * @return 返回配置参数名为name的配置参数
-    */
+     */
     template <class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string& name) {
         RWMutexType::ReadLock lock(GetMutex());
-        auto it = GetDatas().find(name);
-        if(it == GetDatas().end()) return nullptr;
-        return std::dynamic_pointer_cast<ConfigVar<T>>(it -> second);
+        auto                  it = GetDatas().find(name);
+        if (it == GetDatas().end())
+            return nullptr;
+        return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
     }
 
     /// @brief 使用YAML::Node初始化配置模块
@@ -481,6 +490,6 @@ private:
     }
 };
 
-}
+}  // namespace sylar
 
 #endif

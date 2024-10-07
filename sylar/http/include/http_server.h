@@ -29,24 +29,30 @@ public:
      * @param[in] worker 工作调度器
      * @param[in] accept_worker 接收连接调度器
      */
-    HttpServer(bool keepalive = false
-               ,sylar::IOManager* worker = sylar::IOManager::GetThis()
-               ,sylar::IOManager* io_worker = sylar::IOManager::GetThis()
-               ,sylar::IOManager* accept_worker = sylar::IOManager::GetThis());
+    HttpServer(bool              keepalive = false,
+               sylar::IOManager* worker = sylar::IOManager::GetThis(),
+               sylar::IOManager* io_worker = sylar::IOManager::GetThis(),
+               sylar::IOManager* accept_worker = sylar::IOManager::GetThis());
 
     /**
      * @brief 获取ServletDispatch
      */
-    ServletDispatch::ptr getServletDispatch() const { return m_dispatch;}
+    ServletDispatch::ptr getServletDispatch() const {
+        return m_dispatch;
+    }
 
     /**
      * @brief 设置ServletDispatch
      */
-    void setServletDispatch(ServletDispatch::ptr v) { m_dispatch = v;}
+    void setServletDispatch(ServletDispatch::ptr v) {
+        m_dispatch = v;
+    }
 
     virtual void setName(const std::string& v) override;
+
 protected:
     virtual void handleClient(Socket::ptr client) override;
+
 private:
     /// 是否支持长连接
     bool m_isKeepalive;
@@ -54,7 +60,7 @@ private:
     ServletDispatch::ptr m_dispatch;
 };
 
-}
-}
+}  // namespace http
+}  // namespace sylar
 
 #endif

@@ -10,6 +10,7 @@
 #define __SYLAR_STREAM_H__
 
 #include <memory>
+
 #include "serialization.h"
 
 namespace sylar {
@@ -119,6 +120,6 @@ public:
     virtual void close() = 0;
 };
 
-}
+}  // namespace sylar
 
 #endif

@@ -10,14 +10,15 @@
 #ifndef __MUTEX_H__
 #define __MUTEX_H__
 
-#include <thread>
-#include <functional>
-#include <memory>
 #include <pthread.h>
-#include <stdexcept>
 #include <semaphore.h>
 #include <stdint.h>
+
 #include <atomic>
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <thread>
 
 #include "../util/noncopyable.h"
 
@@ -28,17 +29,16 @@ namespace sylar {
  */
 class Semaphore : Noncopyable {
 public:
-
-    Semaphore(uint32_t count = 0);//构造函数, count为信号量的大小，默认为0
+    Semaphore(uint32_t count = 0);  //构造函数, count为信号量的大小，默认为0
 
     ~Semaphore();
 
-    void wait(); //获取信号量
+    void wait();  //获取信号量
 
-    void notify(); //释放信号量
+    void notify();  //释放信号量
 
 private:
-    sem_t m_semaphore; //信号量
+    sem_t m_semaphore;  //信号量
 };
 
 /**
@@ -46,7 +46,7 @@ private:
  * struct的作用是为了让模板类的成员变量和成员函数都是public的，
  * 而class的成员变量和成员函数默认是private的
  */
-template<class T>
+template <class T>
 struct ScopedLockImpl {
 public:
     ScopedLockImpl(T& mutex) : m_mutex(mutex) {
@@ -58,29 +58,29 @@ public:
         unlock();
     }
 
-    void  lock() {
-        if(!m_locked) {
+    void lock() {
+        if (!m_locked) {
             m_mutex.lock();
             m_locked = true;
         }
     }
 
     void unlock() {
-        if(m_locked) {
+        if (m_locked) {
             m_mutex.unlock();
             m_locked = false;
         }
     }
 
 private:
-    T& m_mutex;
+    T&   m_mutex;
     bool m_locked;
 };
 
 /**
  * @brief 局部读锁模板类
  */
-template<class T>
+template <class T>
 struct ReadScopedLockImpl {
 public:
     ReadScopedLockImpl(T& mutex) : m_mutex(mutex) {
@@ -93,28 +93,28 @@ public:
     }
 
     void lock() {
-        if(!m_locked) {
+        if (!m_locked) {
             m_mutex.rdlock();
             m_locked = true;
         }
     }
 
     void unlock() {
-        if(m_locked) {
+        if (m_locked) {
             m_mutex.unlock();
             m_locked = false;
         }
     }
 
 private:
-    T& m_mutex;
+    T&   m_mutex;
     bool m_locked;
 };
 
 /**
  * @brief 局部写锁模板类
  */
-template<class T>
+template <class T>
 struct WriteScopedLockImpl {
 public:
     WriteScopedLockImpl(T& mutex) : m_mutex(mutex) {
@@ -127,21 +127,21 @@ public:
     }
 
     void lock() {
-        if(!m_locked) {
+        if (!m_locked) {
             m_mutex.wrlock();
             m_locked = true;
         }
     }
 
     void unlock() {
-        if(m_locked) {
+        if (m_locked) {
             m_mutex.unlock();
             m_locked = false;
         }
     }
 
 private:
-    T& m_mutex;
+    T&   m_mutex;
     bool m_locked;
 };
 
@@ -150,7 +150,7 @@ private:
  */
 class Mutex : Noncopyable {
 public:
-    typedef ScopedLockImpl<Mutex> Lock; //定义局部锁
+    typedef ScopedLockImpl<Mutex> Lock;  //定义局部锁
 
     Mutex() {
         pthread_mutex_init(&m_mutex, nullptr);
@@ -177,8 +177,8 @@ private:
  */
 class RWMutex : Noncopyable {
 public:
-    typedef ReadScopedLockImpl<RWMutex> ReadLock; //定义局部读锁
-    typedef WriteScopedLockImpl<RWMutex> WriteLock; //定义局部写锁
+    typedef ReadScopedLockImpl<RWMutex>  ReadLock;   //定义局部读锁
+    typedef WriteScopedLockImpl<RWMutex> WriteLock;  //定义局部写锁
 
     RWMutex() {
         pthread_rwlock_init(&m_lock, nullptr);
@@ -209,7 +209,7 @@ private:
  */
 class Spinlock : Noncopyable {
 public:
-    typedef ScopedLockImpl<Spinlock> Lock; //定义局部锁
+    typedef ScopedLockImpl<Spinlock> Lock;  //定义局部锁
 
     Spinlock() {
         pthread_spin_init(&m_mutex, 0);
@@ -236,17 +236,17 @@ private:
  */
 class CASLock : Noncopyable {
 public:
-    typedef ScopedLockImpl<CASLock> Lock; //定义局部锁
+    typedef ScopedLockImpl<CASLock> Lock;  //定义局部锁
 
     CASLock() {
         m_mutex.clear();
     }
 
-    ~CASLock() {
-    }
+    ~CASLock() {}
 
     void lock() {
-        while(std::atomic_flag_test_and_set_explicit(&m_mutex, std::memory_order_acquire));
+        while (std::atomic_flag_test_and_set_explicit(&m_mutex, std::memory_order_acquire))
+            ;
     }
 
     void unlock() {
@@ -259,6 +259,6 @@ private:
     volatile std::atomic_flag m_mutex;
 };
 
-}
+}  // namespace sylar
 
 #endif

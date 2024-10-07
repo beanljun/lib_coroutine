@@ -3,23 +3,24 @@
  * @brief 轻量级协程封装
  * @author beanljun
  * @date 2024-04-20
-*/
+ */
+#include "../include/fiber.h"
+
 #include <atomic>
 
-#include "../util/macro.h"
-#include "../include/fiber.h"
-#include "../include/log.h"
 #include "../include/config.h"
+#include "../include/log.h"
 #include "../include/scheduler.h"
+#include "../util/macro.h"
 
 namespace sylar {
 
 static Logger::ptr g_logger = SYLAR_LOG_NAME("system");
 
 /// 用于生成协程id
-static std::atomic<uint64_t> s_fiber_id {0};
+static std::atomic<uint64_t> s_fiber_id{0};
 /// 用于统计协程数量
-static std::atomic<uint64_t> s_fiber_count {0};
+static std::atomic<uint64_t> s_fiber_count{0};
 
 /// 线程局部变量，当前正在运⾏的协程
 static thread_local Fiber* t_fiber = nullptr;
@@ -27,7 +28,7 @@ static thread_local Fiber* t_fiber = nullptr;
 static thread_local Fiber::ptr t_thread_fiber = nullptr;
 
 //协程栈大小，默认128KB，可以通过配置修改
-static ConfigVar<uint32_t>::ptr g_fiber_stack_size = 
+static ConfigVar<uint32_t>::ptr g_fiber_stack_size =
     Config::Lookup<uint32_t>("fiber.stack_size", 128 * 1024, "fiber stack size");
 
 /**
@@ -36,40 +37,44 @@ static ConfigVar<uint32_t>::ptr g_fiber_stack_size =
  */
 class MallocStackAllocator {
 public:
-    static void *Alloc(size_t size) { return malloc(size); }
-    static void Dealloc(void *vp, size_t size) { return free(vp); }
+    static void* Alloc(size_t size) {
+        return malloc(size);
+    }
+    static void Dealloc(void* vp, size_t size) {
+        return free(vp);
+    }
 };
 
 using StackAllocator = MallocStackAllocator;
 
 uint64_t Fiber::GetFiberId() {
     if (t_fiber) {
-        return t_fiber -> getId();
+        return t_fiber->getId();
     }
     return 0;
 }
 
 Fiber::Fiber() {
-    SetThis(this); // 设置当前协程
+    SetThis(this);  // 设置当前协程
     m_state = RUNNING;
     // 获取当前协程的上下文信息保存到m_ctx中
-    if (getcontext( &m_ctx)) {
+    if (getcontext(&m_ctx)) {
         SYLAR_ASSERT2(false, "getcontext");
     }
     ++s_fiber_count;
-    m_id = s_fiber_id++; 
+    m_id = s_fiber_id++;
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber() main id = " << m_id;
 }
 
 void Fiber::SetThis(Fiber* f) {
-     t_fiber = f;
+    t_fiber = f;
 }
 
 Fiber::ptr Fiber::GetThis() {
-    
+
     if (t_fiber) {
-        return t_fiber -> shared_from_this();
+        return t_fiber->shared_from_this();
     }
 
     ///如果当前线程还未创建协程，则创建线程的第一个协程
@@ -77,34 +82,31 @@ Fiber::ptr Fiber::GetThis() {
     // 此时当前协程应该为主协程
     SYLAR_ASSERT(t_fiber == main_fiber.get());
     t_thread_fiber = main_fiber;
-    return t_fiber -> shared_from_this();
+    return t_fiber->shared_from_this();
 }
 
 Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool run_in_scheduler)
-    : m_id(s_fiber_id++)
-    , m_cb(cb)
-    , m_runInScheduler(run_in_scheduler){
+    : m_id(s_fiber_id++), m_cb(cb), m_runInScheduler(run_in_scheduler) {
 
     ++s_fiber_count;
     // 若给了初始化值则用给定值，若没有则用约定值
-    m_stacksize = stacksize ? stacksize : g_fiber_stack_size -> getValue();
+    m_stacksize = stacksize ? stacksize : g_fiber_stack_size->getValue();
     // 获得协程运行指针
     m_stack = StackAllocator::Alloc(m_stacksize);
     // 保存当前协程上下文信息到m_ctx中
-    if(getcontext(&m_ctx)) {
+    if (getcontext(&m_ctx)) {
         SYLAR_ASSERT2(false, "getcontext");
     }
     // uc_link置空，执行完当前context之后退出程序。
     m_ctx.uc_link = nullptr;
     // 初始化栈指针
-    m_ctx.uc_stack.ss_sp = m_stack; 
+    m_ctx.uc_stack.ss_sp = m_stack;
     // 初始化栈大小
     m_ctx.uc_stack.ss_size = m_stacksize;
     // 指明该context入口函数
     makecontext(&m_ctx, &Fiber::MainFunc, 0);
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber() id = " << m_id;
-
 }
 
 Fiber::~Fiber() {
@@ -136,10 +138,11 @@ void Fiber::reset(std::function<void()> cb) {
     // 当前协程在结束状态
     SYLAR_ASSERT(m_state == TERM);
     m_cb = cb;
-    if (getcontext(&m_ctx)) SYLAR_ASSERT2(false, "getcontext");
+    if (getcontext(&m_ctx))
+        SYLAR_ASSERT2(false, "getcontext");
 
-    m_ctx.uc_link          = nullptr;
-    m_ctx.uc_stack.ss_sp   = m_stack;
+    m_ctx.uc_link = nullptr;
+    m_ctx.uc_stack.ss_sp = m_stack;
     m_ctx.uc_stack.ss_size = m_stacksize;
 
     makecontext(&m_ctx, &Fiber::MainFunc, 0);
@@ -153,16 +156,14 @@ void Fiber::resume() {
 
     // 如果协程参与调度器调度，应该和调度器的主协程进行swap，而不是和线程的主协程进行swap，yeld同理
     if (m_runInScheduler) {
-        if(swapcontext(&(Scheduler::GetMainFiber() -> m_ctx), &m_ctx)) {
+        if (swapcontext(&(Scheduler::GetMainFiber()->m_ctx), &m_ctx)) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     } else {
-        if (swapcontext(&t_thread_fiber -> m_ctx, &m_ctx)) {
+        if (swapcontext(&t_thread_fiber->m_ctx, &m_ctx)) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     }
-
-
 }
 
 void Fiber::yield() {
@@ -175,28 +176,28 @@ void Fiber::yield() {
 
     // 如果协程参与调度器调度，那么应该和调度器的主协程进行swap，而不是线程主协程
     if (m_runInScheduler) {
-        if (swapcontext(&m_ctx, &(Scheduler::GetMainFiber() -> m_ctx))) {
+        if (swapcontext(&m_ctx, &(Scheduler::GetMainFiber()->m_ctx))) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     } else {
-        if (swapcontext(&m_ctx, &(t_thread_fiber -> m_ctx))) {
+        if (swapcontext(&m_ctx, &(t_thread_fiber->m_ctx))) {
             SYLAR_ASSERT2(false, "swapcontext");
         }
     }
 }
 
 void Fiber::MainFunc() {
-    Fiber::ptr cur = GetThis(); //GetThis()的shared_from_this()⽅法让引用计数+1
+    Fiber::ptr cur = GetThis();  // GetThis()的shared_from_this()⽅法让引用计数+1
     SYLAR_ASSERT(cur);
-    
-    cur -> m_cb();//这里真正执行协程的入口函数
-    cur -> m_cb = nullptr;
-    cur -> m_state = TERM;
 
-    auto raw_ptr = cur.get();//手动让t_fiberde的引用计数-1
+    cur->m_cb();  //这里真正执行协程的入口函数
+    cur->m_cb = nullptr;
+    cur->m_state = TERM;
+
+    auto raw_ptr = cur.get();  //手动让t_fiberde的引用计数-1
     cur.reset();
-    raw_ptr -> yield();// 协程结束时⾃动yield, 切换到主协程
+    raw_ptr->yield();  // 协程结束时⾃动yield, 切换到主协程
 }
 
 
-}
+}  // namespace sylar

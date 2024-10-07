@@ -1,20 +1,21 @@
 /**
  * @file util.h
  * @author beanljun
- * @brief 
+ * @brief
  * @date 2024-04-25
  */
 
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <cxxabi.h>  // for abi::__cxa_demangle()
 #include <stdint.h>
+#include <sys/time.h>
 #include <sys/types.h>
+
+#include <iostream>
 #include <string>
 #include <vector>
-#include <sys/time.h>
-#include <iostream>
-#include <cxxabi.h> // for abi::__cxa_demangle()
 
 namespace sylar {
 
@@ -50,7 +51,7 @@ void SetThreadName(const std::string& name);
  * @param[out] bt 保存调用栈
  * @param[in] size 最多返回层数
  * @param[in] skip 跳过栈顶的层数
-*/
+ */
 void Backtrace(std::vector<std::string>& bt, int size, int skip = 1);
 
 /**
@@ -58,7 +59,7 @@ void Backtrace(std::vector<std::string>& bt, int size, int skip = 1);
  * @param[in] size 栈的最大层数
  * @param[in] skip 跳过栈顶的层数
  * @param[in] prefix 栈信息前输出的内容
-*/
+ */
 std::string BacktraceToString(int size = 64, int skip = 2, const std::string& prefix = "");
 
 /// @brief 获取当前时间的毫秒， gettimeofday()
@@ -84,14 +85,13 @@ class FSUtil {
 public:
     /**
      * @brief 读取文件内容
-     * @details 递归列举指定目录下所有指定后缀的常规文件，如果不指定后缀，则遍历所有文件，返回的文件名带路径
-     * @param[out] files 文件列表 
+     * @details
+     * 递归列举指定目录下所有指定后缀的常规文件，如果不指定后缀，则遍历所有文件，返回的文件名带路径
+     * @param[out] files 文件列表
      * @param[in] path 路径
      * @param[in] subfix 后缀名，比如 ".yml"
-    */
-    static void ListAllFile(std::vector<std::string>& files
-                            ,const std::string& path
-                            ,const std::string& subfix);
+     */
+    static void ListAllFile(std::vector<std::string>& files, const std::string& path, const std::string& subfix);
     /// @brief 创建目录
     /// @param[in] dirname 目录名
     static bool Mkdir(const std::string& dirname);
@@ -127,7 +127,6 @@ public:
 
     /// @brief 以只写方式打开
     static bool OpenForWrite(std::ofstream& ofs, const std::string& filename, std::ios_base::openmode mode);
-
 };
 
 /// @brief 类型转换类
@@ -140,17 +139,16 @@ public:
     /// atoi()
     static int64_t Atoi(const char* str);
     static int64_t Atoi(const std::string& str);
-    
+
     /// atof()
     static double Atof(const char* str);
     static double Atof(const std::string& str);
-
 };
 
 /// @brief 获取T类型的类型字符串
 template <class T>
-const char *TypeToName() {
-    static const char *s_name = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, nullptr);
+const char* TypeToName() {
+    static const char* s_name = abi::__cxa_demangle(typeid(T).name(), nullptr, nullptr, nullptr);
     return s_name;
 }
 
@@ -166,7 +164,8 @@ public:
     /**
      * @brief url编码
      * @param[in] str 原始字符串
-     * @param[in] space_as_plus 是否将空格编码成+号，如果为false，则空格编码成%20
+     * @param[in] space_as_plus
+     * 是否将空格编码成+号，如果为false，则空格编码成%20
      * @return 编码后的字符串
      */
     static std::string UrlEncode(const std::string& str, bool space_as_plus = true);
@@ -186,7 +185,7 @@ public:
      * @return  移除后的字符串
      */
     static std::string Trim(const std::string& str, const std::string& delimit = " \t\r\n");
-    
+
     /**
      * @brief 移除字符串首部的指定字符串
      * @param[] str 输入字符串
@@ -194,7 +193,7 @@ public:
      * @return  移除后的字符串
      */
     static std::string TrimLeft(const std::string& str, const std::string& delimit = " \t\r\n");
-    
+
     /**
      * @brief 移除字符尾部的指定字符串
      * @param[] str 输入字符串
@@ -208,9 +207,8 @@ public:
 
     /// 字符串转宽字符串
     static std::wstring StringToWString(const std::string& s);
-
 };
 
-}
+}  // namespace sylar
 
 #endif

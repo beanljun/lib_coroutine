@@ -8,8 +8,8 @@
 #ifndef __HTTP_SESSION_H__
 #define __HTTP_SESSION_H__
 
-#include "http.h"
 #include "../../net/include/socket_stream.h"
+#include "http.h"
 
 namespace sylar {
 namespace http {
@@ -44,7 +44,7 @@ public:
     int sendResponse(HttpResponse::ptr rsp);
 };
 
-}
-}
+}  // namespace http
+}  // namespace sylar
 
 #endif

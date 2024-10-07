@@ -8,33 +8,27 @@
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
 
-#include <memory>
 #include <netinet/tcp.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 
-#include "address.h"
+#include <memory>
+
 #include "../../util/noncopyable.h"
+#include "address.h"
 
 namespace sylar {
 
-class Socket : public std::enable_shared_from_this<Socket> , Noncopyable {
+class Socket : public std::enable_shared_from_this<Socket>, Noncopyable {
 public:
     using ptr = std::shared_ptr<Socket>;
     using weak_ptr = std::weak_ptr<Socket>;
 
     // socket类型
-    enum Type {
-        TCP = SOCK_STREAM,
-        UDP = SOCK_DGRAM
-    };
+    enum Type { TCP = SOCK_STREAM, UDP = SOCK_DGRAM };
 
     // socket地址类型
-    enum Family {
-        IPv4 = AF_INET,
-        IPv6 = AF_INET6,
-        UNIX = AF_UNIX
-    };
+    enum Family { IPv4 = AF_INET, IPv6 = AF_INET6, UNIX = AF_UNIX };
 
     // 创建TCP socket
     static Socket::ptr CreateTCP(sylar::Address::ptr address);
@@ -78,16 +72,16 @@ public:
     bool getOption(int level, int option, void* result, socklen_t* len);
 
     // 获取socket 模板
-    template<class T>
+    template <class T>
     bool getOption(int level, int option, T& value) {
         socklen_t len = sizeof(T);
         return getOption(level, option, &value, &len);
     }
-    
-    // 设置socket 
+
+    // 设置socket
     bool setOption(int level, int option, const void* value, socklen_t len);
     // 设置socket 模板
-    template<class T>
+    template <class T>
     bool setOption(int level, int option, const T& value) {
         return setOption(level, option, &value, sizeof(T));
     }
@@ -110,7 +104,7 @@ public:
      * @return 成功返回true，失败返回false
      * @pre 必须先 bind 成功
      */
-     virtual bool listen(int backlog = SOMAXCONN);
+    virtual bool listen(int backlog = SOMAXCONN);
     // 关闭socket
     virtual bool close();
 
@@ -122,7 +116,7 @@ public:
      * @return >0 发送的字节数，=0 对方关闭，<0 发送失败
      */
     virtual int send(const void* buffer, size_t length, int flags = 0);
-    
+
     /**
      * @brief 发送数据
      * @param buffers 发送缓冲区数组(iovec数组)
@@ -196,21 +190,31 @@ public:
     Address::ptr getLocalAddress();
 
     // 获取协议族
-    int getFamily() const { return m_family; }
+    int getFamily() const {
+        return m_family;
+    }
     // 获取socket类型
-    int getType() const { return m_type; }
+    int getType() const {
+        return m_type;
+    }
     // 获取协议
-    int getProtocol() const { return m_protocol; }
+    int getProtocol() const {
+        return m_protocol;
+    }
 
     // 返回是否连接
-    bool isConnected() const { return m_isConnected; }
+    bool isConnected() const {
+        return m_isConnected;
+    }
     // 是否有效 (m_sock != -1)
     bool isValid() const;
     // 返回Socket错误
     int getError();
     // 返回Socket描述符
-    int getSocket() const { return m_sock; }
-    
+    int getSocket() const {
+        return m_sock;
+    }
+
     // 取消读
     bool cancelRead();
     // 取消写
@@ -221,7 +225,7 @@ public:
     bool cancelAll();
 
     // 输出信息到流中
-    virtual std::ostream &dump(std::ostream &os) const;
+    virtual std::ostream& dump(std::ostream& os) const;
     // 转换为字符串
     virtual std::string toString() const;
 
@@ -236,18 +240,18 @@ protected:
     virtual bool init(int sock);
 
 protected:
-    int m_sock;             // socket描述符
-    int m_family;           // 协议族
-    int m_type;             // socket类型
-    int m_protocol;         // 协议
-    bool m_isConnected;    // 是否连接
-    Address::ptr m_localAddress; // 本地地址
-    Address::ptr m_remoteAddress; // 远端地址
+    int          m_sock;           // socket描述符
+    int          m_family;         // 协议族
+    int          m_type;           // socket类型
+    int          m_protocol;       // 协议
+    bool         m_isConnected;    // 是否连接
+    Address::ptr m_localAddress;   // 本地地址
+    Address::ptr m_remoteAddress;  // 远端地址
 };
 
 // 输出socket信息到流中
 std::ostream& operator<<(std::ostream& os, const Socket& sock);
 
-}
+}  // namespace sylar
 
 #endif

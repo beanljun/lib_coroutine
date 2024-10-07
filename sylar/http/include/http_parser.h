@@ -36,44 +36,60 @@ public:
      * @brief 是否解析完成
      * @return 是否解析完成
      */
-    int isFinished() const { return m_finished; }
+    int isFinished() const {
+        return m_finished;
+    }
 
     /**
      * @brief 设置是否解析完成
      */
-    void setFinished(bool v) { m_finished = v; }
+    void setFinished(bool v) {
+        m_finished = v;
+    }
 
     /**
      * @brief 是否有错误
      * @return 是否有错误
      */
-    int hasError() const { return !!m_error; }
+    int hasError() const {
+        return !!m_error;
+    }
 
     /**
      * @brief 设置错误
      * @param[in] v 错误值
      */
-    void setError(int v) { m_error = v; }
+    void setError(int v) {
+        m_error = v;
+    }
 
     /**
      * @brief 返回HttpRequest结构体
      */
-    HttpRequest::ptr getData() const { return m_data; }
+    HttpRequest::ptr getData() const {
+        return m_data;
+    }
 
     /**
      * @brief 获取http_parser结构体
      */
-    const http_parser &getParser() const { return m_parser; }
+    const http_parser &getParser() const {
+        return m_parser;
+    }
 
     /**
      * @brief 获取当前的HTTP头部field
      */
-    const std::string &getField() const { return m_field; }
+    const std::string &getField() const {
+        return m_field;
+    }
 
     /**
      * @brief 设置当前的HTTP头部field
      */
-    void setField(const std::string &v) { m_field = v; }
+    void setField(const std::string &v) {
+        m_field = v;
+    }
 
 public:
     /**
@@ -124,43 +140,59 @@ public:
     /**
      * @brief 是否解析完成
      */
-    int isFinished() const { return m_finished; }
+    int isFinished() const {
+        return m_finished;
+    }
 
     /**
      * @brief 设置是否解析完成
      */
-    void setFinished(bool v) { m_finished = v; }
+    void setFinished(bool v) {
+        m_finished = v;
+    }
 
     /**
      * @brief 是否有错误
      */
-    int hasError() const { return !!m_error; }
+    int hasError() const {
+        return !!m_error;
+    }
 
     /**
      * @brief 设置错误码
      * @param[in] v 错误码
      */
-    void setError(int v) { m_error = v; }
+    void setError(int v) {
+        m_error = v;
+    }
 
     /**
      * @brief 返回HttpResponse
      */
-    HttpResponse::ptr getData() const { return m_data; }
+    HttpResponse::ptr getData() const {
+        return m_data;
+    }
 
     /**
      * @brief 返回http_parser
      */
-    const http_parser &getParser() const { return m_parser; }
+    const http_parser &getParser() const {
+        return m_parser;
+    }
 
     /**
      * @brief 获取当前的HTTP头部field
      */
-    const std::string &getField() const { return m_field; }
+    const std::string &getField() const {
+        return m_field;
+    }
 
     /**
      * @brief 设置当前的HTTP头部field
      */
-    void setField(const std::string &v) { m_field = v; }
+    void setField(const std::string &v) {
+        m_field = v;
+    }
 
 public:
     /**
@@ -186,7 +218,7 @@ private:
     std::string m_field;
 };
 
-} // namespace http
-} // namespace sylar
+}  // namespace http
+}  // namespace sylar
 
 #endif

@@ -4,6 +4,7 @@
  * @date 2024-10-02
  */
 #include "include/http.h"
+
 #include "../util/util.h"
 
 namespace sylar {
@@ -50,8 +51,8 @@ const char *HttpStatusToString(const HttpStatus &s) {
         return #msg;
         HTTP_STATUS_MAP(XX);
 #undef XX
-    default:
-        return "<unknown>";
+        default:
+            return "<unknown>";
     }
 }
 
@@ -65,8 +66,7 @@ HttpRequest::HttpRequest(uint8_t version, bool close)
     , m_close(close)
     , m_websocket(false)
     , m_parserParamFlag(0)
-    , m_path("/") {
-}
+    , m_path("/") {}
 
 std::string HttpRequest::getHeader(const std::string &key, const std::string &def) const {
     auto it = m_headers.find(key);
@@ -158,21 +158,13 @@ std::string HttpRequest::toString() const {
 }
 
 std::ostream &HttpRequest::dump(std::ostream &os) const {
-    //GET /uri HTTP/1.1
-    //Host: wwww.sylar.top
+    // GET /uri HTTP/1.1
+    // Host: wwww.sylar.top
     //
     //
-    os << HttpMethodToString(m_method) << " "
-       << m_path
-       << (m_query.empty() ? "" : "?")
-       << m_query
-       << (m_fragment.empty() ? "" : "#")
-       << m_fragment
-       << " HTTP/"
-       << ((uint32_t)(m_version >> 4))
-       << "."
-       << ((uint32_t)(m_version & 0x0F))
-       << "\r\n";
+    os << HttpMethodToString(m_method) << " " << m_path << (m_query.empty() ? "" : "?") << m_query
+       << (m_fragment.empty() ? "" : "#") << m_fragment << " HTTP/" << ((uint32_t)(m_version >> 4)) << "."
+       << ((uint32_t)(m_version & 0x0F)) << "\r\n";
     if (!m_websocket) {
         os << "connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
     }
@@ -180,15 +172,14 @@ std::ostream &HttpRequest::dump(std::ostream &os) const {
         if (!m_websocket && strcasecmp(i.first.c_str(), "connection") == 0) {
             continue;
         }
-        if(!m_body.empty() && strcasecmp(i.first.c_str(), "content-length") == 0) {
+        if (!m_body.empty() && strcasecmp(i.first.c_str(), "content-length") == 0) {
             continue;
         }
         os << i.first << ": " << i.second << "\r\n";
     }
 
     if (!m_body.empty()) {
-        os << "content-length: " << m_body.size() << "\r\n\r\n"
-           << m_body;
+        os << "content-length: " << m_body.size() << "\r\n\r\n" << m_body;
     } else {
         os << "\r\n";
     }
@@ -204,12 +195,12 @@ void HttpRequest::initQueryParam() {
     size_t pos = 0;                                                                                        \
     do {                                                                                                   \
         size_t last = pos;                                                                                 \
-        pos         = str.find('=', pos);                                                                  \
+        pos = str.find('=', pos);                                                                          \
         if (pos == std::string::npos) {                                                                    \
             break;                                                                                         \
         }                                                                                                  \
         size_t key = pos;                                                                                  \
-        pos        = str.find(flag, pos);                                                                  \
+        pos = str.find(flag, pos);                                                                         \
                                                                                                            \
         if (0) {                                                                                           \
             std::cout << "<key>:" << str.substr(last, key - last)                                          \
@@ -269,11 +260,7 @@ void HttpRequest::init() {
 }
 
 HttpResponse::HttpResponse(uint8_t version, bool close)
-    : m_status(HttpStatus::OK)
-    , m_version(version)
-    , m_close(close)
-    , m_websocket(false) {
-}
+    : m_status(HttpStatus::OK), m_version(version), m_close(close), m_websocket(false) {}
 
 std::string HttpResponse::getHeader(const std::string &key, const std::string &def) const {
     auto it = m_headers.find(key);
@@ -293,9 +280,12 @@ void HttpResponse::setRedirect(const std::string &uri) {
     setHeader("Location", uri);
 }
 
-void HttpResponse::setCookie(const std::string &key, const std::string &val,
-                             time_t expired, const std::string &path,
-                             const std::string &domain, bool secure) {
+void HttpResponse::setCookie(const std::string &key,
+                             const std::string &val,
+                             time_t             expired,
+                             const std::string &path,
+                             const std::string &domain,
+                             bool               secure) {
     std::stringstream ss;
     ss << key << "=" << val;
     if (expired > 0) {
@@ -320,15 +310,8 @@ std::string HttpResponse::toString() const {
 }
 
 std::ostream &HttpResponse::dump(std::ostream &os) const {
-    os << "HTTP/"
-       << ((uint32_t)(m_version >> 4))
-       << "."
-       << ((uint32_t)(m_version & 0x0F))
-       << " "
-       << (uint32_t)m_status
-       << " "
-       << (m_reason.empty() ? HttpStatusToString(m_status) : m_reason)
-       << "\r\n";
+    os << "HTTP/" << ((uint32_t)(m_version >> 4)) << "." << ((uint32_t)(m_version & 0x0F)) << " " << (uint32_t)m_status
+       << " " << (m_reason.empty() ? HttpStatusToString(m_status) : m_reason) << "\r\n";
 
     for (auto &i : m_headers) {
         if (!m_websocket && strcasecmp(i.first.c_str(), "connection") == 0) {
@@ -343,8 +326,7 @@ std::ostream &HttpResponse::dump(std::ostream &os) const {
         os << "connection: " << (m_close ? "close" : "keep-alive") << "\r\n";
     }
     if (!m_body.empty()) {
-        os << "content-length: " << m_body.size() << "\r\n\r\n"
-           << m_body;
+        os << "content-length: " << m_body.size() << "\r\n\r\n" << m_body;
     } else {
         os << "\r\n";
     }
@@ -359,5 +341,5 @@ std::ostream &operator<<(std::ostream &os, const HttpResponse &rsp) {
     return rsp.dump(os);
 }
 
-} // namespace http
-} // namespace sylar
+}  // namespace http
+}  // namespace sylar
