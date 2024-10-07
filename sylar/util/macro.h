@@ -25,21 +25,27 @@
 
 #endif
 
+/// 断言宏开关，默认关闭
+#define SYLAR_ASSERT_ON false
 /// 断言宏封装，如果条件不成立，打印日志并终止程序
-#define SYLAR_ASSERT(x)                                                                \
-    if (SYLAR_UNLIKELY(!(x))) {                                                        \
-        SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ASSERTION: " #x << "\nbacktrace:\n"      \
-                                          << sylar::BacktraceToString(100, 2, "    "); \
-        assert(x);                                                                     \
+#define SYLAR_ASSERT(x)                                                                    \
+    if (SYLAR_ASSERT_ON) {                                                                 \
+        if (SYLAR_UNLIKELY(!(x))) {                                                        \
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ASSERTION: " #x << "\nbacktrace:\n"      \
+                                              << sylar::BacktraceToString(100, 2, "    "); \
+            assert(x);                                                                     \
+        }                                                                                  \
     }
 
 /// 断言宏封装，如果条件不成立，打印日志并终止程序，并且附加断言信息
-#define SYLAR_ASSERT2(x, w)                                                            \
-    if (SYLAR_UNLIKELY(!(x))) {                                                        \
-        SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ASSERTION: " #x << "\n"                  \
-                                          << w << "\nbacktrace:\n"                     \
-                                          << sylar::BacktraceToString(100, 2, "    "); \
-        assert(x);                                                                     \
+#define SYLAR_ASSERT2(x, w)                                                                \
+    if (SYLAR_ASSERT_ON) {                                                                 \
+        if (SYLAR_UNLIKELY(!(x))) {                                                        \
+            SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ASSERTION: " #x << "\n"                  \
+                                              << w << "\nbacktrace:\n"                     \
+                                              << sylar::BacktraceToString(100, 2, "    "); \
+            assert(x);                                                                     \
+        }                                                                                  \
     }
 
 #endif
