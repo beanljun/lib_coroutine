@@ -24,7 +24,9 @@ html
 # cmake output
 build
 lib
-bin
+
+/bin/*
+!/bin/conf/
 .vscode
 .cache
 doc/
